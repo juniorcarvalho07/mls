@@ -1,0 +1,3 @@
+/home/helton/projetos/taichi_simul/mls-mpm88/build/CMakeFiles/rebuild_cache.dir
+/home/helton/projetos/taichi_simul/mls-mpm88/build/CMakeFiles/mpm.dir
+/home/helton/projetos/taichi_simul/mls-mpm88/build/CMakeFiles/edit_cache.dir
