@@ -1,0 +1,2 @@
+main.o: main.cpp sph.hh ColorRGBA.hpp Cores.h vector.hh neighbordata.hh \
+ kdtree.hh hashgrid.hh

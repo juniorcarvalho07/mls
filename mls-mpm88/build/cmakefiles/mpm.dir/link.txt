@@ -1,0 +1,1 @@
+/usr/bin/g++     -lglut -lGLEW -lX11 -std=c++14 -g  -pthread   -L /lib64  -O3 -DNDEBUG  -rdynamic CMakeFiles/mpm.dir/main.cpp.o  -o mpm -lGL -lGLU -lglut -lXmu -lXi -lpthread -lX11 
