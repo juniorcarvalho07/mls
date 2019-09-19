@@ -66,6 +66,7 @@ polarDecomposition.h
 mat3d.h
 eig3.h
 vec3d.h
+visualizer.hh
 of/ofBase.h
 of/ofBinaryIO.h
 of/ofBoundaryCellCIterator2D.h

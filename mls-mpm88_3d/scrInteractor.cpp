@@ -758,71 +758,75 @@ void scrInteractor::Draw_Axis() {
 void scrInteractor::Init_Lights() /* define a iluminação da malha*/
 {
 //	float amb_light[] =  {0.2f, 0.2f, 0.2f, 1.0f};
-  
+
    float _angle = 50.0f;
-   
-   
-         
+
+
+
     //Add ambient light
-    GLfloat ambientColor[] = {0.25f, 0.25f, 0.25f, 1.0f}; //Color (0.2, 0.2, 0.2)
-    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientColor);
-    
+    GLfloat ambientColor[] = {0.25f, 0.25f, 0.25f, 0.5f}; //Color (0.2, 0.2, 0.2)
+    //glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientColor);
+
     //Add positioned light
-    GLfloat diffuseLightColor0[] = {0.5f, 0.5f, 0.5f, 1.0f}; 
-    GLfloat specularLightColor0[] = {1.0f, 1.0f, 1.0f, 1.0f}; 
-    GLfloat lightPos0[] = {10.5f, -5.5f, 2.0f, 1.0f};
+    GLfloat diffuseLightColor0[] = {0.5f, 0.5f, 0.5f, 1.0f};
+    GLfloat specularLightColor0[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    GLfloat lightPos0[] = {10.5f, -10.5f, 20.0f, 1.0f};
     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLightColor0);
     glLightfv(GL_LIGHT0, GL_SPECULAR, specularLightColor0);
     glLightfv(GL_LIGHT0, GL_POSITION, lightPos0);
-    
+
     //Add directed light
-    GLfloat lightColor1[] = {1.0f, 1.0f, 1.0f, 1.0f}; //Color (0.5, 0.2, 0.2)
+    GLfloat lightColor1[] = {0.25f, 0.25f, 0.25f, 1.0f}; //Color (0.5, 0.2, 0.2)
     //Coming from the direction (-1, 0.5, 0.5)
-    GLfloat lightPos1[] = {10.5f, -10.5f, -2.5f, 1.0f};
+    GLfloat lightPos1[] = {0.0f, 0.0f, 50.5f, 0.0f};
     glLightfv(GL_LIGHT1, GL_DIFFUSE, lightColor1);
-    //glLightfv(GL_LIGHT1, GL_SPECULAR, specularLightColor0);
+    glLightfv(GL_LIGHT1, GL_SPECULAR, specularLightColor0);
     glLightfv(GL_LIGHT1, GL_POSITION, lightPos1);
-    glRotatef(_angle, 0.0f, 1.0f, 0.0f);
-    
-   
-	// Capacidade de brilho do material
-	GLfloat especularidade[4] = { 0.25, 0.25, 0.25, 0.25 };
-	GLint especMaterial = 5;
+    //glRotatef(_angle, 0.0f, 1.0f, 0.0f);
 
-	// Especifica que a cor de fundo da janela será preta
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
-	// Habilita o modelo de colorização de Gouraud
-	glShadeModel(GL_SMOOTH);
+    // Capacidade de brilho do material
+    GLfloat especularidade[4] = { 0.125, 0.125, 0.125, 0.125 };
+    GLint especMaterial = 1;
 
-	// Define a refletância do material
-	glMaterialfv(GL_FRONT, GL_SPECULAR, especularidade);
-	// Define a concentração do brilho
-	glMateriali(GL_FRONT, GL_SHININESS, especMaterial);
+    // Especifica que a cor de fundo da janela será preta
+    //glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
-	// Ativa o uso da luz ambiente
-	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientColor);
+    // Habilita o modelo de colorização de Gouraud
+    glShadeModel(GL_SMOOTH);
 
-	// Define os parâmetros da luz de número 0
-	glLightfv(GL_LIGHT0, GL_AMBIENT, ambientColor);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLightColor0);
-	glLightfv(GL_LIGHT1, GL_AMBIENT, ambientColor);
-	glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuseLightColor0);
-	//glLightfv(GL_LIGHT1, GL_SPECULAR, luzEspecular);
-	//glLightfv(GL_LIGHT1, GL_POSITION, posicaoLuz);
-	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE,GL_TRUE);
+    // Define a refletância do material
+    glMaterialfv(GL_FRONT, GL_SPECULAR, especularidade);
+    // Define a concentração do brilho
+    glMateriali(GL_FRONT, GL_SHININESS, especMaterial);
 
-	// Habilita a definição da cor do material a partir da cor corrente
-	glEnable(GL_COLOR_MATERIAL);
-	//Habilita o uso de iluminação
-	glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-	glEnable(GL_LIGHTING);
-	// Habilita a luz de número 0
-	glEnable(GL_LIGHT0);
-	// Habilita o depth-buffering
-	glEnable(GL_DEPTH_TEST);
+    // Ativa o uso da luz ambiente
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientColor);
 
-	glEnable(GL_NORMALIZE);
+    // Define os parâmetros da luz de número 0
+    glLightfv(GL_LIGHT0, GL_AMBIENT, ambientColor);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLightColor0);
+    // Define os parâmetros da luz de número 0
+    glLightfv(GL_LIGHT1, GL_AMBIENT, ambientColor);
+    glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuseLightColor0);
+    //glLightfv(GL_LIGHT1, GL_SPECULAR, luzEspecular);
+    //glLightfv(GL_LIGHT1, GL_POSITION, posicaoLuz);
+    glLightModeli(GL_LIGHT_MODEL_TWO_SIDE,GL_TRUE);
+
+    // Habilita a definição da cor do material a partir da cor corrente
+    glEnable(GL_COLOR_MATERIAL);
+    //Habilita o uso de iluminação
+    glColorMaterial(GL_FRONT_AND_BACK, GL_MAT_AMBIENT_AND_DIFFUSE_BIT_PGI);
+    glEnable(GL_LIGHTING);
+
+    // Habilita a luz de número 0
+    //glEnable(GL_LIGHT0);
+    // Habilita a luz de número 1
+    glEnable(GL_LIGHT1);
+    // Habilita o depth-buffering
+    glEnable(GL_DEPTH_TEST);
+
+    glEnable(GL_NORMALIZE);
 }
 
 /*===================================================================*/

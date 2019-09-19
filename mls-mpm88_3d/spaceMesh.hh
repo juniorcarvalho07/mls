@@ -5,9 +5,11 @@
 typedef std::pair<int,int> TcP;
 #include "vector.hh"
 #include "kdtree.hh"
-#include "MLS_MPM_fluid.hh"
+#include "particle.hh"
+//#include "MLS_MPM_fluid.hh"
 #include "rx_matrix.hh"
 #include <math.h>
+#include <stdio.h>
 #include <GL/glew.h>
 #include <GL/glut.h>
 //#include <GL/gl.h>
@@ -474,16 +476,19 @@ typedef void (SpaceMesh::*FuncTableIndex)(int&, int&, int[], rxSSGrid*);
   int Nx,Ny,iNx,iNy,Li;
   std::vector<cell> cells;
   std::vector<float> *vSSDMap;
+  std::vector<float> vSSDMapMax;
+  std::vector<unsigned int> vSS_Swap_Map;
   
   std::vector< Vector > *vrts;
   std::vector< Vector > *normals;
   vector<rxSSParticle> *m_vSSPrts;
-  of::ofList<int> bv;
+  //of::ofList<int> bv;
   vector<bVertex> *vBVertex;
   vector<rxSSEdge> *m_vSSEdge;
   vector<bEdge> vbEdge;
   vector<rxSSVertex> *m_vSSEdgeVertex;
   vector<rxSSVertex> *m_vSSVertex;
+  vector<TColorRGBA> m_vSSVertexColor;
   GridDel Del;
   SearchStructure searcher;
   std::vector<std::vector<NeighborData> > neighbors;
@@ -495,6 +500,7 @@ typedef void (SpaceMesh::*FuncTableIndex)(int&, int&, int[], rxSSGrid*);
   int m_iNumNodeVrts;
   int m_iNumEdgeVrts;
   int m_iNumMesh;
+  int maxSwap;
   int pnum;
   float P[16];
   float MV[16];
@@ -516,7 +522,7 @@ typedef void (SpaceMesh::*FuncTableIndex)(int&, int&, int[], rxSSGrid*);
   void updateTableIndexE4N4(int &table_index, int &vrot, int v[], rxSSGrid *g);
   SpaceMesh()
   {
-    screenSpace=0.8;  //water 2.5 ; blood 0.8
+    screenSpace=2.0;  //water 2.5 ; blood 0.8
   }
   ~SpaceMesh()
   {
@@ -527,6 +533,19 @@ typedef void (SpaceMesh::*FuncTableIndex)(int&, int&, int[], rxSSGrid*);
                                            m[1], m[5], m[9],  m[13],
                                            m[2], m[6], m[10], m[14],
                                            m[3], m[7], m[11], m[15]);
+  }
+
+
+  inline double DEPTH2COLORf(double depth)
+  {
+      if(depth == INF){
+          depth = 1.0;
+      }
+      else{
+          depth *= 0.5;
+      }
+      RX_CLAMP(depth, 0.0, 1.0);
+      return 1.0-depth;
   }
 
   void initCells( int p,BboxScreenSpace &Box,bool delsurfaceok)
@@ -547,7 +566,8 @@ typedef void (SpaceMesh::*FuncTableIndex)(int&, int&, int[], rxSSGrid*);
     pnum=p;
     zijMax= -1000000.0;
     zijMin= 1000000.0;
-    m_fSSZmax=2.5;
+    maxSwap=0;
+    m_fSSZmax=5.0;
     Nx =   (Box.maxx-Box.minx)/screenSpace ;
     Ny =   (Box.maxy-Box.miny)/screenSpace ;
     
@@ -572,10 +592,12 @@ typedef void (SpaceMesh::*FuncTableIndex)(int&, int&, int[], rxSSGrid*);
                 cells.clear();
                 cells.resize((Nx+1)*(Ny+1));
         }*/
-
-
+        vSS_Swap_Map.resize((Nx+1)*(Ny+1));
+        vSSDMapMax.resize((Nx+1)*(Ny+1));
         for(int i = 0; i < (Nx+1)*(Ny+1); ++i){
                 vSSDMap->at(i) = INF;
+                vSS_Swap_Map[i]=0;
+                vSSDMapMax[i]=-INF;
         }
       m_vFilter = CalBinomials(21);
       m_FuncTableIndex[0]  = 0;
@@ -615,7 +637,8 @@ typedef void (SpaceMesh::*FuncTableIndex)(int&, int&, int[], rxSSGrid*);
 
       
       if ((m_vSSPrts!=NULL)&&(m_vSSPrts->size() != pnum)) {
-       
+      m_vSSVertexColor.clear();
+
       m_vSSPrts->clear ();
       delete m_vSSPrts;
       m_vSSPrts = new vector<rxSSParticle>;
@@ -631,7 +654,7 @@ typedef void (SpaceMesh::*FuncTableIndex)(int&, int&, int[], rxSSGrid*);
   }
   
   
-  void findindFirstBBox(SPH &sph,BboxScreenSpace &Box)
+  void findindFirstBBox(std::vector<Particle> &particles, taichi::real h,BboxScreenSpace &Box)
   {
     
      float P[16];
@@ -656,17 +679,17 @@ typedef void (SpaceMesh::*FuncTableIndex)(int&, int&, int[], rxSSGrid*);
     Box.maxx=0;Box.maxy=0;Box.minx=vp[2];Box.miny=vp[3];
     int pi;
     Vector tr,rp;
-    tr.x = 0.5*sph.smoothing_radius()*vp[2]*sqrt(P[0]*P[0]+P[1]*P[1]+P[2]*P[2]);
-    tr.y = 0.5*sph.smoothing_radius()*vp[3]*sqrt(P[4]*P[4]+P[5]*P[5]+P[6]*P[6]);
-    tr.z = 0.5*sph.smoothing_radius()*sqrt(P[8]*P[8]+P[9]*P[9]+P[10]*P[10]);
+    tr.x = 0.5*h*vp[2]*sqrt(P[0]*P[0]+P[1]*P[1]+P[2]*P[2]);
+    tr.y = 0.5*h*vp[3]*sqrt(P[4]*P[4]+P[5]*P[5]+P[6]*P[6]);
+    tr.z = 0.5*h*sqrt(P[8]*P[8]+P[9]*P[9]+P[10]*P[10]);
     rp.x = tr.x/1.0/2.0;
     rp.y = tr.y/1.0/2.0;
     rp.z = tr.z;
      rp2=rp.x*rp.x;
 
-    for(pi=0;pi< sph.particles.size();pi++)
+    for(pi=0;pi< particles.size();pi++)
     {
-	Particle &p =sph.particles[pi];
+    Particle &p =particles[pi];
         //p.color=red;
 
 
@@ -674,14 +697,20 @@ typedef void (SpaceMesh::*FuncTableIndex)(int&, int&, int[], rxSSGrid*);
 
         Vec4 x = Vec4(p.x.x,p.x.y,p.x.z, 1.0);
 
+        //Vec4 xteste = Vec4(2.0,1.0,0.0, 1.0);
 
         Vec4 xd = PMV*x;
+        //Vec4 xdteste = PMV*xteste;
 
         float invw = 1/xd[3];
-        xp =   vp[2]*(0.5+0.5*xd[0]*invw);
-        yp =   vp[3]*(0.5+0.5*xd[1]*invw);
+        xp =   vp[2]*(0.0+0.5*xd[0]*invw);
+        yp =   vp[3]*(0.0+0.5*xd[1]*invw);
         wz=xd[2];
         
+        //invw = 1/xdteste[3];
+        //float xpteste =   vp[2]*(0.5+0.5*xdteste[0]*invw);
+        //float ypteste =   vp[3]*(0.5+0.5*xdteste[1]*invw);
+
         if (Box.maxx<xp+rp.x)
              {
                Box.maxx =  xp+rp.x;
@@ -884,8 +913,8 @@ typedef void (SpaceMesh::*FuncTableIndex)(int&, int&, int[], rxSSGrid*);
       IMVQ = invMV*invP;
 
 
-      xd[0] = -1.0+2.0*xp/vp[2];
-      xd[1] = -1.0+2.0*yp/vp[3];
+      xd[0] = 2.0*xp/vp[2];
+      xd[1] = 2.0*yp/vp[3];
       xd[3] = (1.0-invP(3,2)*zp)/(invP(3,0)*xd[0]+invP(3,1)*xd[1]+invP(3,3));
 
       xd[0] *= xd[3];
@@ -992,7 +1021,7 @@ typedef void (SpaceMesh::*FuncTableIndex)(int&, int&, int[], rxSSGrid*);
 
 
   
-  void setupDephMap( SPH &sph,bool surfaceok=false, bool edgeok=false,bool svok=false, bool bvok=false,bool fok=false,bool SSEdgeok=false,bool delsurfaceok=false)
+  void setupDephMap( std::vector<Particle> &particles,taichi::real h,bool surfaceok=false, bool edgeok=false,bool svok=false, bool bvok=false,bool fok=false,bool SSEdgeok=false,bool delsurfaceok=false)
   {
    float P[16];
     float w,iR,rp2,f;
@@ -1002,8 +1031,7 @@ typedef void (SpaceMesh::*FuncTableIndex)(int&, int&, int[], rxSSGrid*);
     int vp[4];
     int xp,yp ,Fnx,Fny;
 
-    CGAL::Timer task_timer; task_timer.start();
-    std::size_t memory = CGAL::Memory_sizer().virtual_size();
+
     glMatrixMode(GL_MODELVIEW);
    
     glGetIntegerv(GL_VIEWPORT, vp);
@@ -1011,7 +1039,7 @@ typedef void (SpaceMesh::*FuncTableIndex)(int&, int&, int[], rxSSGrid*);
     glGetFloatv(GL_PROJECTION_MATRIX, P);
     
     
-    findindFirstBBox(sph,Box);
+    findindFirstBBox(particles,h,Box);
     
     
     float maxdimx,maxdimy;
@@ -1024,7 +1052,7 @@ typedef void (SpaceMesh::*FuncTableIndex)(int&, int&, int[], rxSSGrid*);
         Box.minx = max(0,Box.Center[0]-maxdimx*0.5); Box.maxx = min(Box.Center[0]+maxdimx*0.5,vp[2]);
         Box.miny = max(0,Box.Center[1]-maxdimy*0.5); Box.maxy = min(Box.Center[1]+maxdimy*0.5,vp[3]);
         
-	initCells(sph.particles.size(),Box,delsurfaceok);
+    initCells(particles.size(),Box,delsurfaceok);
 
     
     Pr = GetMatrixGL(P);
@@ -1035,9 +1063,9 @@ typedef void (SpaceMesh::*FuncTableIndex)(int&, int&, int[], rxSSGrid*);
 
     int pi;
     Vector tr,rp;
-    tr.x = 0.5*sph.smoothing_radius()*vp[2]*sqrt(P[0]*P[0]+P[1]*P[1]+P[2]*P[2]);
-    tr.y = 0.5*sph.smoothing_radius()*vp[3]*sqrt(P[4]*P[4]+P[5]*P[5]+P[6]*P[6]);
-    tr.z = 0.5*sph.smoothing_radius()*sqrt(P[8]*P[8]+P[9]*P[9]+P[10]*P[10]);
+    tr.x = 0.75*h*vp[2]*sqrt(P[0]*P[0]+P[1]*P[1]+P[2]*P[2]);
+    tr.y = 0.75*h*vp[3]*sqrt(P[4]*P[4]+P[5]*P[5]+P[6]*P[6]);
+    tr.z = 0.75*h*sqrt(P[8]*P[8]+P[9]*P[9]+P[10]*P[10]);
     
      Fnx=Box.minx/screenSpace;
      Fny=Box.miny/screenSpace;
@@ -1045,9 +1073,9 @@ typedef void (SpaceMesh::*FuncTableIndex)(int&, int&, int[], rxSSGrid*);
      iboxmin[0]=Box.minx; iboxmin[1]=Box.miny;
      iboxmax[0]=Box.maxx; iboxmax[1]=Box.maxy;
 
-    for(pi=0;pi< sph.particles.size();pi++)
+    for(pi=0;pi< particles.size();pi++)
     {
-	Particle &p =sph.particles[pi];
+    Particle &p =particles[pi];
         //p.color=red;
 
 
@@ -1059,13 +1087,13 @@ typedef void (SpaceMesh::*FuncTableIndex)(int&, int&, int[], rxSSGrid*);
         Vec4 xd = PMV*x;
 
         float invw = 1/xd[3];
-        xp =   vp[2]*(0.5+0.5*xd[0]*invw);
-        yp =   vp[3]*(0.5+0.5*xd[1]*invw);
+        xp =   vp[2]*(0.0+0.5*xd[0]*invw);
+        yp =   vp[3]*(0.0+0.5*xd[1]*invw);
         wz=xd[2];
          rp.x = tr.x*invw/2.0;
          rp.y = tr.y*invw/2.0;
          rp.z = tr.z;
-         rp2=rp.x*rp.x*0.35; //0.35 para água/coelho //0.85 para sangue/vasos
+         rp2=rp.x*rp.x*0.5; //0.35 para água/coelho //0.85 para sangue/vasos
         
          if(xp < 0 || xp >= vp[2] || yp < 0 || yp >= vp[3])
           continue;
@@ -1100,17 +1128,33 @@ typedef void (SpaceMesh::*FuncTableIndex)(int&, int&, int[], rxSSGrid*);
               
 	      f= 1.0 - iR/rp2;
 
-
+              float zijM = vSSDMapMax[i+j*(Nx+1)];
               float zij = vSSDMap->at(i+j*(Nx+1));
-              float hij = f;
+              float hij = sqrt(f);
 
               float z = wz-rp.z*hij;
+              float z2 = wz+rp.z*hij;
+              if(z2>zijM)
+              {
+                  vSSDMapMax[i+j*(Nx+1)]=z2;
+                   vSS_Swap_Map[i+j*(Nx+1)]++;
+                   if( vSS_Swap_Map[i+j*(Nx+1)]>maxSwap)
+                       maxSwap= vSS_Swap_Map[i+j*(Nx+1)];
+              }
               if( z < zij){
                       vSSDMap->at(i+j*(Nx+1)) = z;
+                      vSS_Swap_Map[i+j*(Nx+1)]++;
+                      if( vSS_Swap_Map[i+j*(Nx+1)]>maxSwap)
+                          maxSwap= vSS_Swap_Map[i+j*(Nx+1)];
                       if(z>zijMax)
+                      {
                           zijMax=z;
+
+                      }
                       if(z<zijMin)
+                      {
                           zijMin=z;
+                      }
               }
 
 	    }
@@ -1119,9 +1163,10 @@ typedef void (SpaceMesh::*FuncTableIndex)(int&, int&, int[], rxSSGrid*);
     }
     
     
-     ApplyDepthFilter(vSSDMap, Nx+1, Ny+1, 8);
+     ApplyDepthFilter(vSSDMap, Nx+1, Ny+1, 10);
+     ApplyDepthFilter(&vSSDMapMax, Nx+1, Ny+1, 10);
 
-     m_iNumNodeVrts = CalNodeVertex(Nx, Ny, dx, dy,m_vSSMGrid, vSSDMap,Box);
+     m_iNumNodeVrts = CalNodeVertex(Nx, Ny, dx, dy,m_vSSMGrid, vSSDMap,vSSDMapMax, Box,particles[0].color);
 
      int edge_num = DetectSilhouetteEdgeVertex(Nx, Ny, dx, dy, vSSDMap, m_vSSPrts, vp[2], vp[3]);
 
@@ -1134,14 +1179,14 @@ typedef void (SpaceMesh::*FuncTableIndex)(int&, int&, int[], rxSSGrid*);
 	m_iNumMesh = CalMesh(Nx, Ny, m_vSSMGrid, polys, 0,Box);
         
 
-	ApplySilhoutteSmoothing(m_vSSVertex, polys, 6);
+    ApplySilhoutteSmoothing(m_vSSVertex, polys, 10);
      }
      else     
      if(delsurfaceok)
      {
-         findingDelaunayMesh(polys,m_fSSZmax*2.8);
+         //findingDelaunayMesh(polys,m_fSSZmax*2.8);
 
-        ApplySilhoutteSmoothing(m_vSSVertex, polys, 6);
+        ApplySilhoutteSmoothing(m_vSSVertex, polys, 10);
      }
 
 
@@ -1188,8 +1233,8 @@ Box1.miny=vp[3];
                   }
 
              //realy = vp[3]-xpf.y;
-             xd[0] = -1.0+2.0*xpf.x/vp[2];
-             xd[1] = -1.0+2.0*xpf.y/vp[3];
+             xd[0] = 2.0*xpf.x/vp[2];
+             xd[1] = 2.0*xpf.y/vp[3];
              xd[3] = (1.0-Q(3,2)*xpf.z)/(Q(3,0)*xd[0]+Q(3,1)*xd[1]+Q(3,3));
 
              xd[0] *= xd[3];
@@ -1221,12 +1266,12 @@ Box1.miny=vp[3];
       
       
       if(fok)
-	DrawField(iboxmin,iboxmax,dx,dy);
+        DrawField(iboxmin,iboxmax,dx,dy);
       
       if(bvok)
       {
-        int cok = FindingBoundaryPoints(rp.x*sqrt(0.35));
-        DrawBoundaryVertex2D(rp.x*sqrt(0.35));
+        //int cok = FindingBoundaryPoints(rp.x*sqrt(0.35));
+        DrawBoundaryVertex2D(rp.x*sqrt(0.85));
         
       }
      
@@ -1239,12 +1284,10 @@ Box1.miny=vp[3];
      if((surfaceok)|| (delsurfaceok)) 
      {
        CalVertexNormals(vrts,vrts->size(),polys,polys.size(),normals);
-	DrawSSMesh(polys,sph.particles[0].color,edgeok);
+        DrawSSMesh(polys,edgeok);
      }
      
-      MMemory.push_back(CGAL::Memory_sizer().virtual_size()-memory);
-  
-  std::cout << (MMemory[MMemory.size()-1]>>10) << " Kbytes allocated; i = " << MMemory.size()-1 << std::endl;
+
      vSSDMap->clear();
       delete vSSDMap;
       vSSDMap=NULL;
@@ -1255,15 +1298,16 @@ Box1.miny=vp[3];
      m_vSSPrts = NULL;
      m_vSSVertex->clear();
      delete m_vSSVertex;
+     m_vSSVertexColor.clear();
+     vSS_Swap_Map.clear();
+     vSSDMapMax.clear();
      normals->clear();
      delete normals;
      vBVertex->clear();
      delete vBVertex;
+
      
-     
-     Mtime.push_back(task_timer.time());
-      std::cerr << "Total reconstruction: " << Mtime[Mtime.size()-1] << " seconds\n";
-     
+
   }
 
 
@@ -1280,19 +1324,33 @@ Box1.miny=vp[3];
           return x1;
       return x2;
   }
-inline float RX_DEPTH2COLORf(float depth)
+inline float RX_DEPTH2COLORf(float depth,float oT,unsigned int s,float depthMax)
     {
-    float d;
-    //cout << "depth = " << depth << std::endl;
-	if(depth == INF){
-                d = 1.0;
+    float d,aux;
+    int i,k;
+    //std::cout << "depth = " << depth << std::endl;
+    if((depth == INF)||(depthMax==-INF)){
+                d = oT;
 	}
 	else{
-                d =depth;
+        /*if(s>0)
+        {
+                d =oT;
+
+                for(i=1;i<s;i++)
+                {
+                    k=(i+1);
+                    aux = (float)(1.0/k)*oT;
+                    d=d+aux;
+                }
+        }
+        else
+            d=0.9;*/
+        d =oT + ((depthMax-depth)/(zijMax-zijMin))*((1.3/(maxSwap))*s);
 	}
 
-        RX_CLAMP(d, (float)0.0, (float)1.0);
-        return 1.0-d;
+        RX_CLAMP(d, (float)oT, (float)0.9);
+        return d;
       }
   
  void DrawField(double minpos[2], double maxpos[2],float dw,float dh)
@@ -1435,13 +1493,19 @@ inline float RX_DEPTH2COLORf(float depth)
  
   
   
-void DrawSSMesh(std::vector<std::vector<unsigned int> > &polys,TColorRGBA c, bool edgeok=false)
+void DrawSSMesh(std::vector<std::vector<unsigned int> > &polys, bool edgeok=false)
 {
 
     int nt =polys.size();
-    glColor4f(c.R, c.G, c.B,c.A);
+
+    //glColor4f(c.R, c.G, c.B,1.2*c.A);
     glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        if(m_vSSVertexColor[0].A==1.0)
+        {
+            float vc[4]={0.5, 0.5, 0.0, 1.0};
+            glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE,vc);
+        }
     glBegin(GL_TRIANGLES);
 
     for(unsigned int i = 0; i < nt; i++){
@@ -1451,15 +1515,15 @@ void DrawSSMesh(std::vector<std::vector<unsigned int> > &polys,TColorRGBA c, boo
         id2 = polys[i][2];
 
         glNormal3f(normals->at(id0).x, normals->at(id0).y, normals->at(id0).z);
-
+        glColor4f(m_vSSVertexColor[id0].R, m_vSSVertexColor[id0].G, m_vSSVertexColor[id0].B,m_vSSVertexColor[id0].A);
         glVertex3f(vrts->at(id0).x,vrts->at(id0).y,vrts->at(id0).z);
 
         glNormal3f(normals->at(id1).x, normals->at(id1).y, normals->at(id1).z);
-
+        glColor4f(m_vSSVertexColor[id1].R, m_vSSVertexColor[id1].G, m_vSSVertexColor[id1].B,m_vSSVertexColor[id1].A);
         glVertex3f(vrts->at(id1).x,vrts->at(id1).y,vrts->at(id1).z);
 
         glNormal3f(normals->at(id2).x, normals->at(id2).y, normals->at(id2).z);
-
+        glColor4f(m_vSSVertexColor[id2].R, m_vSSVertexColor[id2].G, m_vSSVertexColor[id2].B,m_vSSVertexColor[id2].A);
         glVertex3f(vrts->at(id2).x,vrts->at(id2).y,vrts->at(id2).z);
 
     }
@@ -1687,6 +1751,14 @@ void DrawSSMesh(std::vector<std::vector<unsigned int> > &polys,TColorRGBA c, boo
     }
     return false;
   }
+
+  inline bool InVector(int ch,std::vector<int> &V)
+  {
+      for (int i;i<V.size();i++)
+          if(V[i]==ch)
+              return true;
+      return false;
+  }
   
   int FindingBoundaryPoints(float rho)
   {
@@ -1697,7 +1769,7 @@ void DrawSSMesh(std::vector<std::vector<unsigned int> > &polys,TColorRGBA c, boo
       float rho95 = rho*0.95;
       int i,j,k,n,p;
             //std::vector<int> tmpV;
-      of::ofList<int> tmpV;
+      std::vector<int> tmpV;
       std::vector<int> corrTmp;
       std::vector<int> ch; //convexHullPoints
       
@@ -1724,9 +1796,10 @@ void DrawSSMesh(std::vector<std::vector<unsigned int> > &polys,TColorRGBA c, boo
                         if(!cn.empty)
                             for (int m=0;m<cn.listSSvrtx.size();m++)
                             {
-                                if(tmpV.inList(cn.listSSvrtx[m])==false)
+
+                                if(InVector(cn.listSSvrtx[m],tmpV)==false)
                                 {
-                                    tmpV.insert(cn.listSSvrtx[m]);
+                                    tmpV.push_back(cn.listSSvrtx[m]);
                                     count++; corrTmp.push_back(count);
                                 }
 
@@ -1738,11 +1811,11 @@ void DrawSSMesh(std::vector<std::vector<unsigned int> > &polys,TColorRGBA c, boo
                  if(tmpV.size()>0) // this is a viewpoint cell
                  {
 		     c.vp=true;
-                     FindConvexHull(tmpV,ch,i,j,rho);
+                     //FindConvexHull(tmpV,ch,i,j,rho);
                      for(p=0;p<ch.size();p++)
                      {
 		       bVertex v;
-		       v.id=tmpV.pos(ch[p]);
+               v.id=tmpV[ch[p]];
 		       m_vSSVertex->at(v.id).b=true;
 		       if(isbVertexInVector(vBVertex,v)==false)
 			 vBVertex->push_back(v);
@@ -1786,7 +1859,7 @@ void DrawSSMesh(std::vector<std::vector<unsigned int> > &polys,TColorRGBA c, boo
     return xpf.norm();
   }
 
-  void FindConvexHull(of::ofList<int> &tmpV,std::vector<int> &cv,int k,int l,float rho)
+  /*void FindConvexHull(std::vector<int> &tmpV,std::vector<int> &cv,int k,int l,float rho)
   {
       Points points, result;
 
@@ -1870,7 +1943,7 @@ std::vector<Vertex_handle> v_handle;
 	 
      
   }
-
+*/
 
 
 
@@ -2447,7 +2520,7 @@ void conectingDots(float rho)
   
 
 
-  int CalNodeVertex(int nx, int ny, double dw, double dh, std::vector<rxSSGrid> *grid,  vector<float> *dgrid,BboxScreenSpace Box)
+  int CalNodeVertex(int nx, int ny, double dw, double dh, std::vector<rxSSGrid> *grid,  vector<float> *dgrid,vector<float> &dgridMax,BboxScreenSpace Box,TColorRGBA c)
   {
     if(grid->size() != nx*ny){
                     grid->clear();
@@ -2475,13 +2548,23 @@ void conectingDots(float rho)
      
 
           int nv_num = 0;
+          TColorRGBA caux;
+          caux.R=c.R;caux.G=c.G;caux.B=c.B;caux.A=c.A;
           for(int j = 0; j <= ny; ++j){
                   for(int i = 0; i <= nx; ++i){
-                          double d = dgrid->at(i+j*(nx+1));
+                          float d = dgrid->at(i+j*(nx+1));
+                          float dmax = dgridMax[i+j*(nx+1)];
+                          double thick;
+
                           if(d < INF){
                                   Vector vrt_pos = Vector(Box.minx+dw*(i), Box.miny+dh*j, d);
+                                  if(c.A<1)
+                                    caux.A=RX_DEPTH2COLORf(d,c.A,vSS_Swap_Map[i+j*(nx+1)],dmax);
+                                  else
+                                      caux.A=1.0;
 
                                   m_vSSVertex->push_back(rxSSVertex(vrt_pos, 0));
+                                  m_vSSVertexColor.push_back(caux);
                                   nv_num++;
                                   int vidx =  m_vSSVertex->size()-1;
 
@@ -2832,7 +2915,7 @@ void conectingDots(float rho)
                           }
 
                           if(vrt_pos.x == 0 && vrt_pos.y == 0){
-                                  cout << "edge vertex error : " << i << endl;
+                                  std::cout << "edge vertex error : " << i << std::endl;
                           }
                   }
 
@@ -2969,7 +3052,6 @@ void conectingDots(float rho)
           // 7   5
           // - 4 -
 
-
           //  - 10 -
           // 11     9
           //  -  8 -
@@ -2977,7 +3059,7 @@ void conectingDots(float rho)
 
           int num_mesh = 0;
           for(int j = 0; j < ny; ++j){
-                  for(int i = 0; i < nx; ++i){
+                 for(int i = 0; i < nx; ++i){
                           rxSSGrid *g = &grid->at(i+j*nx);
 
                           int table_index = 0;
@@ -3013,7 +3095,7 @@ void conectingDots(float rho)
 
                                                   if(v[idx] == -1){
                                                           v[idx] = 0;
-                                                          cout << "mesh error : " << i << ", " << j << endl;
+                                                          std::cout << "mesh error : " << i << ", " << j << std::endl;
                                                   }
 
                                                   tri[l] = v[idx]+vstart;

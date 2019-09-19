@@ -27,7 +27,6 @@ protected:
 
 public:
 
-
   void SetColor (float R, float G, float B, float A)
   {
     int r,s;
@@ -115,17 +114,17 @@ float mouse_force = 200,normalizedV;
 int jump;
 Vec mouse_point(std::numeric_limits<double>::infinity(),
                    std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity());
-std::vector<NeighborData> selected;
+
 
 
 MLS_MPM mpm;
 
 scrInteractor *Interactor = new scrInteractor(screenW, screenH);
 
-bool running = false, drawgrid = false, drawsurface = false, drawhash = false, drawtree = false, saveImageFile=false, saveFile=false,vcolorok=false,showFPSok=false;
+bool running = false, drawgrid = false, drawsurface = false, drawhash = false, drawtree = false, saveImageFile=false, saveFile=false,vcolorok=false,showFPSok=false,screenMeshok=false;
 Sphere3D pSphere;
 int niter=0;
-
+int impf=1;
 void showFPS(float fps)
 {
     static std::stringstream ss;
@@ -164,8 +163,14 @@ void RenderScene(void)
 {
   allCommands->Execute();
 
+
+
+
+
+if((!drawsurface) && (!screenMeshok))
+{
 TColorRGBA caux;
-    pSphere.SolidSphere(dx*1.0,4,4);
+    pSphere.SolidSphere(dx*0.5,4,4);
   glClearColor(1.0, 1.0, 1.0, 0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -187,14 +192,15 @@ TColorRGBA caux;
       glEnable(GL_BLEND);
           glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
       // draw particles
-      for (int i = 0; i < mpm.n_particles(); ++i) {
-        Vec const &p = mpm.particle(i).x;
-        Vector vi(mpm.particle(i).v.x,mpm.particle(i).v.y,mpm.particle(i).v.z);
+      for (int i = 0; i < mpm.n_particles(); i++)
+        for (int j=0;j<mpm.v_particles[i].size();j++){
+        Vec const &p = mpm.v_particles[i][j].x;
+        Vector vi(mpm.v_particles[i][j].v.x,mpm.v_particles[i][j].v.y,mpm.v_particles[i][j].v.z);
        // glVertex2f(p.x, p.y);
-        caux.R=mpm.particle(i).color.R;
-         caux.G=mpm.particle(i).color.G;
-         caux.B=mpm.particle(i).color.B;
-         caux.A=mpm.particle(i).color.A;
+        caux.R=mpm.v_particles[i][j].color.R;
+         caux.G=mpm.v_particles[i][j].color.G;
+         caux.B=mpm.v_particles[i][j].color.B;
+         caux.A=mpm.v_particles[i][j].color.A;
      if(vcolorok)
      {
              Interactor->ShowLookupTable(true,mpm.NormMinV,mpm.NormMaxV,"Velocity",mpm.Acc_total_time);
@@ -226,20 +232,11 @@ TColorRGBA caux;
  glDisable(GL_BLEND);
   // glEnd();
     
-   
+}
     
     
-  glPointSize(10);
-      glEnable(GL_POINT_SMOOTH);
-      glBegin(GL_POINTS);
-  // selected particles in red
-  glColor3f(1, 0, 0);
-  for (int i = 0; i < selected.size(); ++i) {
-    Vec const &p = mpm.particle(selected[i].idx).x;
-    glVertex3f(p.x, p.y,p.z);
-  }
-  glEnd();
- 
+
+
   // if requested, draw search data structures
   if (drawhash) {
    // mpm.hashgrid().draw(mouse_point);
@@ -250,29 +247,52 @@ TColorRGBA caux;
   }
   
   if (drawgrid) {
-    //mpm.drawSurfaceGrid();
+    mpm.Vis.drawAllSurfaceGrid(mpm.v_particles);
   }
   
   if (drawsurface) {
-    //mpm.drawSurface();
+      glEnable(GL_BLEND);
+          glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    mpm.Vis.execute(mpm.v_particles,1.0*dx,1,impf);
+    glDisable(GL_BLEND);
+  }
+  if (screenMeshok) {
+      glEnable(GL_BLEND);
+          glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    mpm.Vis.execute(mpm.v_particles,0.5*dx,2,impf);
+    glDisable(GL_BLEND);
   }
   
+
+  if(MalhaObst!=NULL)
+  {
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      PrintObst->SmoothFaces(redb);
+      PrintObst->Edges(lgrey);
+      glDisable(GL_BLEND);
+  }
+
 
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   Print->Face(0,whiteo);
   Print->Face(1,whiteo);
  Print->Face(2,whiteo);
  Print->Face(3,whiteo);
- Print->Face(4,whiteo);
- Print->Face(5,whiteo);
+ //Print->Face(4,whiteo);
+ //Print->Face(5,whiteo);
  Print->Face(6,whiteo);
  Print->Face(7,whiteo);
  Print->Face(8,whiteo);
  Print->Face(9,whiteo);
+
  glDisable(GL_BLEND);
 
 if(showFPSok)
     showFPS(FPSf);
+
+
+
+
   glFinish();
   glutSwapBuffers();
 }  
@@ -331,19 +351,37 @@ void HandleKeyboard(unsigned char key, int x, int y){
     case ' ':
       running = !running;
       break;
-    case 't':
-      drawtree = !drawtree;
+
+  case 'i':
+      Interactor->WriteScreenImage(mpm.Acc_total_time);
       break;
-    case 'h':
-      drawhash = !drawhash;
+    case 'S':
+  {
+      screenMeshok=!screenMeshok;
+      drawsurface=false;
+  }
+      break;
+    case 'G':
+      drawgrid = !drawgrid;
       break;
     case 'f':
       showFPSok = !showFPSok;
       break;
     case 'x':
       saveImageFile = !saveImageFile;
-    case 'g':
-      drawgrid = !drawgrid;
+    case 'Z':
+  {
+      drawsurface = !drawsurface;
+      screenMeshok=false;
+      impf=1;
+  }
+      break;
+   case 'O':
+  {
+      drawsurface = !drawsurface;
+      screenMeshok=false;
+      impf=2;
+  }
       break;
   case 'v':
       vcolorok = !vcolorok;
@@ -358,6 +396,12 @@ void HandleKeyboard(unsigned char key, int x, int y){
     case '-':
       //mpm.smoothing_radius(1./1.1 * mpm.smoothing_radius());
       break;
+  case '.':
+   mpm.Vis.SM.screenSpace+=0.5;
+   break;
+ case ',':
+   mpm.Vis.SM.screenSpace-=0.5;
+   break;
     case '0':
     case '1': 
     case '2': 
@@ -514,20 +558,20 @@ int main(int argc, char ** argv)
 
    constructBox();
    //std::cout<< std::endl<< "aqui"<<std::endl<<std::endl;
-  //MalhaObst = new TMesh();
+  MalhaObst = new TMesh();
    if(MalhaObst!=NULL)
    {
-    //Reader.read(MalhaObst,"/home/helton/projetos/codigo3D/off/splineit2corteTri.off");
+    Reader.read(MalhaObst,"/home/helton/projetos/mls-mpm88_3d/off/splineit2corteTri.off");
         //Reader.read(MalhaObst,"/home/helton/Gdrive/mpm/off/splineit2corteTriRef.off");
-     Reader.read(MalhaObst,"/home/helton/projetos/codigo3D/off/splineit3corteTri.off");
+     //Reader.read(MalhaObst,"/home/helton/projetos/mls-mpm88_3d/off/cup.off");
      //Reader.read(MalhaObst,"/home/helton/Gdrive/mpm/off/splineit2s.off");
      //Reader.read(MalhaObst,"/home/helton/Gdrive/mpm/off/bunny200Points1.off");
       // Reader.read(MalhaObst,"/home/helton/Dropbox/mpm/off/cross.off");
      //Reader.read(MalhaObst,"/home/helton/Dropbox/mpm/off/elephant500Points.off");
-    // Reader.read(MalhaObst,"/home/helton/Dropbox/mpm/off/cup.off");
+     //Reader.read(MalhaObst,"/home/helton/projetos/mls-mpm88_3d/off/cup.off");
      //Reader.read(MalhaObst,"/home/helton/Dropbox/mpm/off/needlecorte.off");
      //Reader.read(MalhaObst,"/home/helton/Gdrive/mpm/off/cup2.off");
-     //Reader.read(MalhaObst,"/home/helton/projetos/codigo3D/off/cup.off");
+     //Reader.read(MalhaObst,"/home/helton/projetos/codigo3D/off/bunny200Points1.off");
      //Writer.write(MalhaObst,"/home/helton/Dropbox/mpm/off/needle05_a.off");
       meshHandlerObst.Set(MalhaObst);
       PrintObst = new TPrintOf(meshHandlerObst);
@@ -590,9 +634,9 @@ int main(int argc, char ** argv)
         if(maxdim < fabs(y2 - y1)) maxdim = fabs(y2 - y1);
         if(maxdim < fabs(z2 - z1)) maxdim = fabs(z2 - z1);
         for(ivo.initialize(); ivo.notFinish(); ++ivo){
-          ivo->setCoord(0,(ivo->getCoord(0)/(maxdim*0.7))); // 0.7 needle  1.25 othewise
-          ivo->setCoord(1,(ivo->getCoord(1)/(maxdim*1.0)));
-          ivo->setCoord(2,(ivo->getCoord(2)/(maxdim*0.7))); //0.7 needle 1.25 othewise
+          ivo->setCoord(0,(ivo->getCoord(0)/(maxdim*0.8))); // 0.7 needle  1.25 othewise
+          ivo->setCoord(1,(ivo->getCoord(1)/(maxdim*1.2)));
+          ivo->setCoord(2,(ivo->getCoord(2)/(maxdim*0.8))); //0.7 needle 1.25 othewise
         }
         ivo.initialize();
         x1 = x2 = ivo->getCoord(0);
@@ -623,7 +667,7 @@ int main(int argc, char ** argv)
 
         for(ivo.initialize(); ivo.notFinish(); ++ivo){
           ivo->setCoord(0,(ivo->getCoord(0)+(center[0]-centerObst[0])));
-          ivo->setCoord(1,(ivo->getCoord(1)-0.0)); // -0.1 vaso -0.6 bunny -0.25 cup 0.0 cup2 +0.1 needle  0.0 cross
+          ivo->setCoord(1,(ivo->getCoord(1)+(center[1]-centerObst[1])-0.2)); // -0.1 vaso -0.6 bunny -0.25 cup 0.0 cup2 +0.1 needle  0.0 cross
           ivo->setCoord(2,(ivo->getCoord(2)+(center[2]-centerObst[2])));
         }
         //Writer.write(MalhaObst,"/home/helton/Dropbox/mpm/off/needleref_scale.off");
@@ -633,12 +677,15 @@ int main(int argc, char ** argv)
   //mpm.init_coord_sphere( 0.02,0.1);
     //
 
-        //mpm.init(Vec(0.0+0.15,0.0+0.5,0.0+0.15),Vec(0.0+0.5,0.0+1.0,0.0+0.85),0.0,0.0275,1); //Dambreak
+        //mpm.init(Vec(0.0+0.15,0.0+0.5,0.0+0.15),Vec(0.0+0.5,0.0+1.0,0.0+0.85),0.0,0.025,0); //Dambreak
         //mpm.init_sphere(Vec(0.25,0.3,0.35),Vec(0.40, 0.8, 0.65), 0.02,0.0225,1);
-        //mpm.init_sphere(Vec(0.45,0.8,0.35),Vec(0.6, 1.1, 0.65), 0.02,0.0225,0);
-        mpm.init_sphere(Vec(0.75,0.55,0.15),Vec(1.35, 1.1, 0.55), 0.02,0.03,2);
+        //mpm.init_sphere(Vec(1.1,0.55,0.25),Vec(1.32, 1.3, 0.80), 0.02,0.02,0);
+        //mpm.init_sphere(Vec(0.25,0.8,0.35),Vec(0.4, 1.1, 0.65), 0.02,0.0225,1);
+        //mpm.init_sphere(Vec(0.65,0.8,0.35),Vec(0.8, 1.1, 0.65), 0.02,0.0225,2);
+        //mpm.init_sphere(Vec(0.7,0.8,0.35),Vec(0.92, 1.4, 0.65), 0.02,0.0225,0);
+
         //mpm.init(Vector(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.01,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.15,meshHandlerObst->getVertex(Vymax)->getCoord(2)+0.0055),Vector(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.045,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.02,meshHandlerObst->getVertex(Vymax)->getCoord(2)+0.055),0.02,0.006); //simpleit3corte
-        //mpm.init(Vector(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.04,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.125,meshHandlerObst->getVertex(Vymax)->getCoord(2)-0.0355),Vector(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.165,meshHandlerObst->getVertex(Vymax)->getCoord(1)+0.4,meshHandlerObst->getVertex(Vymax)->getCoord(2)+0.025),0.02,0.01); // splineit2corteTri
+        mpm.init(Vec(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.055,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.025,meshHandlerObst->getVertex(Vymax)->getCoord(2)-0.0555),Vec(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.165,meshHandlerObst->getVertex(Vymax)->getCoord(1)+0.4,meshHandlerObst->getVertex(Vymax)->getCoord(2)+0.015),0.02,0.01,-1); // splineit2corteTri
         //mpm.init(Vector(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.015,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.11,meshHandlerObst->getVertex(Vymax)->getCoord(2)-0.0255),Vector(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.05,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.04,meshHandlerObst->getVertex(Vymax)->getCoord(2)+0.0125),0.02,0.005); // splineit3corteTri
         //mpm.init(Vector(meshHandlerObst->getVertex(Vymax)->getCoord(0)-0.00,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.10,meshHandlerObst->getVertex(Vymax)->getCoord(2)-0.1),Vector(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.09,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.05,meshHandlerObst->getVertex(Vymax)->getCoord(2)-0.04),0.02,0.004);//needle
         //mpm.init(Vector(0.0-0.13,0.0+0.2,0.0-0.08),Vector(0.0+0.15,0.0+2.5,0.0+0.08),0.02,0.0261); //cup 2
@@ -675,6 +722,7 @@ int main(int argc, char ** argv)
         }
 
         PrintObst->SetOpenglObjects(redb);
+        mpm.FillGridObst(MalhaObst);
 
         }
 

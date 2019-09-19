@@ -1532,7 +1532,7 @@ inline void EigenDecomposition(rxMatrix2 &A, rxMatrix2 &R)
  * @param[in] A
  * @param[out] R,S
  */
-inline void PolarDecomposition(const rxMatrix2 &A, rxMatrix2 &R, rxMatrix2 &S)
+/*inline void PolarDecomposition(const rxMatrix2 &A, rxMatrix2 &R, rxMatrix2 &S)
 {
 	R.MakeIdentity();
 
@@ -1568,7 +1568,7 @@ inline void PolarDecomposition(const rxMatrix2 &A, rxMatrix2 &R, rxMatrix2 &S)
 	S = R*A.Transpose();
 }
 
-
+*/
 
 
 

@@ -18,7 +18,9 @@
 #include <stdio.h>
 #include <math.h>
 //#include <time.h>
+#include <vector>
 #include <memory.h>
+#include <iostream>
 
 #include <float.h>
 
@@ -114,6 +116,7 @@ public :
   
 void CopyPolyhedron(std::vector<std::vector<unsigned int> > &triangles,std::vector <Vector> &MCMeshPoints,std::vector<Vector> *nrms)
 {
+
   int i;
   unsigned int nnrms = _nverts;
           nrms->resize(nnrms);

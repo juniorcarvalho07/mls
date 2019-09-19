@@ -2,17 +2,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
-#include "ColorRGBA.hpp"
-#include "Cores.h"
-#include "vector.hh"
-#include "neighbordata.hh"
-#include "kdtree.hh"
+
 #include "mat3d.h"
-#include "taichi.h"
-#include"polarDecomposition.h"
+//#include "taichi.h"
+#include "polarDecomposition.h"
 
 #include "quaternion.h"
-#include "MarchingCubes.h"
+#include "visualizer.hh"
 #include "ply.h"
 #include "of.h"
 #include "ofPlane.h"
@@ -21,8 +17,6 @@
 #include "ofOffWriter.h"
 #include "ofList.h"
 #include "VisOf/Utils/Handler.hpp"
-#include "ColorRGBA.hpp"
-#include "Cores.h"
 #include "Point.hpp"
 #include "printof.hpp"
 #include "GL_Interactor.h"
@@ -48,7 +42,7 @@ typedef of::ofPlane<TTraits> TPlane;
 typedef of::ofOffReader<TTraits> TReader;
 typedef of::ofOffWriter<TTraits> TWriter;
 typedef of::ofRuppert2D<TTraitsSSMesh> TruppertSSM;
-typedef Quaternion<double> TQuaternion;
+typedef Quaternion<real> TQuaternion;
 TMesh *malha;
 TMesh *MalhaObst;
 TReader Reader;
@@ -66,7 +60,7 @@ TPrintOf *PrintObst;
 typedef MyCommands<TPrintOf> TMyCommands;
 typedef CommandComponent TAllCommands;
 typedef std::vector<int> vecInt;
-std::vector<float> Mtime;
+std::vector<real> Mtime;
 std::vector<std::size_t> MMemory;
 
 
@@ -83,94 +77,61 @@ using Vec = Vector3;
 using Mat = Matrix3;
 
 const int n = 100 /*grid resolution (cells)*/, window_size = 800;
-const real dt = 60e-4_f / n , frame_dt = 1e-3_f, dx = 2.0_f / n,
+const taichi::real dt = 50e-4_f / n , frame_dt = 1e-3_f, dx = 2.0_f / n,
            inv_dx = 1.0_f / dx;
 auto particle_mass = 1.0_f, vol = 1.0_f;
 auto hardening = 2.5_f;
-real E = 1e4_f; // Young's modulus
-real nu = 0.2_f; // Poisson's ratio
+taichi::real E = 1e4_f; // Young's modulus
+taichi::real nu = 0.2_f; // Poisson's ratio
 
-real mu_0 = E / (2 * (1 + nu));// Shear modulus (or Dynamic viscosity in fluids)
-real  lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu)); // Lamé's 1st parameter \lambda=K-(2/3)\mu, where K is the Bulk modulus
+taichi::real mu_0 = E / (2 * (1 + nu));// Shear modulus (or Dynamic viscosity in fluids)
+taichi::real  lambda_0 = E * nu / ((1 + nu) * (1 - 2 * nu)); // Lamé's 1st parameter \lambda=K-(2/3)\mu, where K is the Bulk modulus
 const bool plastic = true;
 //Grid Resolution
 
 Vector4 grid[n + 1][n + 1][n+1];
+std::vector<unsigned int> gridObst[n + 1][n + 1][n+1];
 
-inline float rand01()
+inline real rand01()
 {
-  return float(std::rand())/RAND_MAX;
+  return real(std::rand())/RAND_MAX;
 }
 
-inline float sphere_function(Vec center, Vec P, float r)
+inline real sphere_function(Vec center, Vec P, real r)
 {
   return (P.x-center.x)*(P.x-center.x)+(P.y-center.y)*(P.y-center.y)+(P.z-center.z)*(P.z-center.z)-r*r;
 };
 
 inline Vec randomDirection()
 {
-  float alpha = 2 * M_PI * rand01();
-  float beta = 2 * M_PI * rand01();
+  real alpha = 2 * M_PI * rand01();
+  real beta = 2 * M_PI * rand01();
   
   return Vec(cos(alpha)*cos(beta), sin(alpha)*cos(beta),sin(beta));
 }
 
-struct Particle {
-      Vec x; // position
-      Vec v; // velocity
-      Mat C; // affine momentum matrix, unused in this file
-      // Deformation gradient
-      Mat F;
-      // Determinant of the deformation gradient (i.e. volume)
-      real Jp;
-      float mass;
-      int type;  // 0: elastic   1: plastic   2: liquid
-      TColorRGBA color;
-
-      Particle(int t=2,Vec x =Vec(0), Vec v=Vec(0)):
-      x(x),
-      v(v),
-        F(1),
-        C(0),
-        type(t),
-        Jp(1){
-          switch(type){
-          case 2:
-              color =waterblue1;
-              break;
-          case 1:
-              color =yellow;
-              break;
-          case 0:
-              color =red;
-              break;
-
-          }
-      }
-  };
 
     struct Parameters {
   // time step
-  float dt;
+  real dt;
 
 
   
    // environment
 
   // restitution
-  float a;  
-  float mass;
+  real a;
+  real mass;
 
-   float gravity;
+   real gravity;
   // fluid parameters
-   float rest_density ;
-   float dynamic_viscosity;
+   real rest_density ;
+   real dynamic_viscosity;
   // equation of state
-  float eos_stiffness;
-  float eos_power;
+  real eos_stiffness;
+  real eos_power;
 
 };
-
 
 
 
@@ -179,17 +140,17 @@ class MLS_MPM
 {
 public:
 // creation parameters
-  float jitter;
-  float spacing;
+  real jitter;
+  real spacing;
 std::string screenFilename;
 int winWidth, winHeight ;
 int screenFilenameNumber;
 int num_cells;
-
+Visualizer Vis;
 Parameters params;
-float Acc_time;
-float Acc_total_time;
-float NormMaxA, NormMinA, NormMaxV,NormMinV,pressureMin,pressureMax,Wmax,Wmin;
+real Acc_time;
+real Acc_total_time;
+real NormMaxA, NormMinA, NormMaxV,NormMinV,pressureMin,pressureMax,Wmax,Wmin;
 
 	MLS_MPM(){
 
@@ -212,28 +173,58 @@ float NormMaxA, NormMinA, NormMaxV,NormMinV,pressureMin,pressureMax,Wmax,Wmin;
     params.dynamic_viscosity = 0.002f;
     // equation of state
     params.eos_stiffness = 1000.0f;
-    params.eos_power = 7;
+    params.eos_power = 1;
     params.mass=1.25;
     num_cells = n * n* n;
     NormMaxA=-10000.0; NormMinA=10000.0; NormMaxV=-100000.0;NormMinV=10000.0;
     pressureMin=10000.0;pressureMax=-10000.0,Wmax=1.5,Wmin=0.0;
-    particles.clear();
+    v_particles.clear();
 	};
 	~MLS_MPM(){};
 
-	std::vector<Particle> particles;
-    std::vector<std::vector<NeighborData> > neighbors;
+    std::vector<std::vector<Particle>> v_particles;
 
-    template<class Searcher>
-    void updateSearcher(Searcher &searcher) const {
-      // create search data structure
-      searcher.clear();
-      for (int i = 0; i < particles.size(); ++i) {
-        searcher.insert(i, Vector(particles[i].x.x,particles[i].x.y,particles[i].x.z));
-      }
-      searcher.init();
+
+
+    inline void FillGridObst(TMesh *M)
+    {
+        if(M!=NULL)
+        {
+            BoundingBox bb;
+            of::ofCellsIterator<TTraits> ic(M);
+                for(ic.initialize(); ic.notFinish(); ++ic)
+                {
+                    Vector p1(M->getVertex(M->getCell(&ic)->getVertexId(0))->getCoord(0),M->getVertex(M->getCell(&ic)->getVertexId(0))->getCoord(1),M->getVertex(M->getCell(&ic)->getVertexId(0))->getCoord(2));
+                    Vector p2(M->getVertex(M->getCell(&ic)->getVertexId(1))->getCoord(0),M->getVertex(M->getCell(&ic)->getVertexId(1))->getCoord(1),M->getVertex(M->getCell(&ic)->getVertexId(1))->getCoord(2));
+                    Vector p3(M->getVertex(M->getCell(&ic)->getVertexId(2))->getCoord(0),M->getVertex(M->getCell(&ic)->getVertexId(2))->getCoord(1),M->getVertex(M->getCell(&ic)->getVertexId(2))->getCoord(2));
+                    bb.lower_boundary.x=p1.x; bb.lower_boundary.y=p1.y;bb.lower_boundary.z=p1.z;
+                    bb.upper_boundary.x=p1.x;bb.upper_boundary.y=p1.y;bb.upper_boundary.z=p1.z;
+                    if(p2.x<bb.lower_boundary.x) bb.lower_boundary.x = p2.x;
+                    if(p2.y<bb.lower_boundary.y) bb.lower_boundary.y = p2.y;
+                    if(p2.z<bb.lower_boundary.z) bb.lower_boundary.z = p2.z;
+                    if(p2.x>bb.upper_boundary.x) bb.upper_boundary.x = p2.x;
+                    if(p2.y>bb.upper_boundary.y) bb.upper_boundary.y = p2.y;
+                    if(p2.z>bb.upper_boundary.z) bb.upper_boundary.z = p2.z;
+                    if(p3.x<bb.lower_boundary.x) bb.lower_boundary.x = p3.x;
+                    if(p3.y<bb.lower_boundary.y) bb.lower_boundary.y = p3.y;
+                    if(p3.z<bb.lower_boundary.z) bb.lower_boundary.z = p3.z;
+                    if(p3.x>bb.upper_boundary.x) bb.upper_boundary.x = p3.x;
+                    if(p3.y>bb.upper_boundary.y) bb.upper_boundary.y = p3.y;
+                    if(p3.z>bb.upper_boundary.z) bb.upper_boundary.z = p3.z;
+                    Vector3i base_coord_lower =
+                        (bb.lower_boundary * inv_dx ).cast<int>();  // element-wise floor
+                    Vector3i base_coord_upper =
+                        (bb.upper_boundary * inv_dx ).cast<int>();  // element-wise floor
+                    int i,j,k;
+                    for(i=base_coord_lower.x;i<=base_coord_upper.x;i++)
+                        for(j=base_coord_lower.y;j<=base_coord_upper.y;j++)
+                            for(k=base_coord_lower.z;k<=base_coord_upper.z;k++)
+                                gridObst[i][j][k].push_back(&ic);
+
+                }
+
+        }
     }
-
 
     inline void ComputeTriangleMeshNormal(TMesh *M,int Cellid,int dir =1)
     {
@@ -262,11 +253,11 @@ float NormMaxA, NormMinA, NormMaxV,NormMinV,pressureMin,pressureMax,Wmax,Wmin;
     };
 
 
-    vector<Vec> sample_hex(float spacing, float jitter, Vec min, Vec max) {
-        const float spacing_2 = spacing/2;
-        const float yspacing = spacing*sqrt(3.0);
-        const float yspacing_2 = yspacing/2;
-        const float zspacing_2 = yspacing/2;
+    vector<Vec> sample_hex(real spacing, real jitter, Vec min, Vec max) {
+        const real spacing_2 = spacing/2;
+        const real yspacing = spacing*sqrt(3.0);
+        const real yspacing_2 = yspacing/2;
+        const real zspacing_2 = yspacing/2;
         Vec pos;
         vector<Vec> positions;
         bool yraised = false;
@@ -311,15 +302,15 @@ float NormMaxA, NormMinA, NormMaxV,NormMinV,pressureMin,pressureMax,Wmax,Wmin;
       }
 
 
-    vector<Vec> sample_hex_coord_sphere(float spacing, float jitter, Vec min, Vec max, float radius) {
-      const float spacing_2 = spacing/2;
-        const float yspacing = spacing*sqrt(3.0);
-        const float yspacing_2 = yspacing/2;
-        const float zspacing_2 = yspacing/2;
+    vector<Vec> sample_hex_coord_sphere(real spacing, real jitter, Vec min, Vec max, real radius) {
+      const real spacing_2 = spacing/2;
+        const real yspacing = spacing*sqrt(3.0);
+        const real yspacing_2 = yspacing/2;
+        const real zspacing_2 = yspacing/2;
         Vec pos,center;
         vector<Vec> positions;
         center.x =(min.x+max.x)*0.5; center.y =(min.y+max.y)*0.5; center.z =(min.z+max.z)*0.5;
-        float maxr = radius;float minr=radius/10.0;float rmax,r = max.x - min.x; rmax = r;
+        real maxr = radius;real minr=radius/10.0;real rmax,r = max.x - min.x; rmax = r;
         minr=min.x;maxr=max.x;
         if((max.y - min.y)<r)
            r = (max.y - min.y);
@@ -336,8 +327,8 @@ float NormMaxA, NormMinA, NormMaxV,NormMinV,pressureMin,pressureMax,Wmax,Wmin;
           minr=min.z;maxr=max.z;
         }
         minr=radius/10.0;
-        float r1,theta,phi,thetaStep,phiStep,rStep=minr;
-        float r2 = rmax*0.5;
+        real r1,theta,phi,thetaStep,phiStep,rStep=minr;
+        real r2 = rmax*0.5;
         theta=0.0;
         thetaStep= 2*M_PI/(100.0);
         phiStep = M_PI/(100.0);
@@ -386,15 +377,15 @@ float NormMaxA, NormMinA, NormMaxV,NormMinV,pressureMin,pressureMax,Wmax,Wmin;
         return positions;
       }
 
-    vector<Vec> sample_hex_sphere(float spacing, float jitter, Vec min, Vec max) {
-    const float spacing_2 = spacing/2;
-      const float yspacing = spacing*sqrt(3.0);
-      const float yspacing_2 = yspacing/2;
-      const float zspacing_2 = yspacing/2;
+    vector<Vec> sample_hex_sphere(real spacing, real jitter, Vec min, Vec max) {
+    const real spacing_2 = spacing/2;
+      const real yspacing = spacing*sqrt(3.0);
+      const real yspacing_2 = yspacing/2;
+      const real zspacing_2 = yspacing/2;
       Vec pos,center;
       vector<Vec> positions;
       center.x =(min.x+max.x)*0.5; center.y =(min.y+max.y)*0.5; center.z =(min.z+max.z)*0.5;
-      float maxr,minr,rmax,r = max.x - min.x; rmax = r;
+      real maxr,minr,rmax,r = max.x - min.x; rmax = r;
       minr=min.x;maxr=max.x;
       if((max.y - min.y)<r)
          r = (max.y - min.y);
@@ -410,7 +401,7 @@ float NormMaxA, NormMinA, NormMaxV,NormMinV,pressureMin,pressureMax,Wmax,Wmin;
         rmax = (max.z - min.z);
         minr=min.z;maxr=max.z;
       }
-      float r2 = rmax*0.5;
+      real r2 = rmax*0.5;
       bool yraised = false;
       bool zraised = false;
       for (pos.x =center.x-r2 ; pos.x <= center.x+r2; pos.x += spacing_2)
@@ -454,19 +445,20 @@ float NormMaxA, NormMinA, NormMaxV,NormMinV,pressureMin,pressureMax,Wmax,Wmin;
       return positions;
     }
 
-      void init_coord_sphere(Vec Vi, Vec Vf,float jitter = 0.02, float spacing = 0.02,int type=2) {
+      void init_coord_sphere(Vec Vi, Vec Vf,real jitter = 0.02, real spacing = 0.02,int type=2) {
 
         this->jitter = jitter;
         this->spacing = spacing;
 
         // fill half a [0,1]^2 box with particles
         vector<Vec> pos = sample_hex_coord_sphere(spacing, jitter, Vi, Vf,2.0);
-
+        std::vector<Particle> particles;
         particles.clear();
         for (int i = 0; i < pos.size(); ++i) {
-          particles.push_back(Particle(type,pos[i]));
+          particles.push_back(Particle(type,dx,pos[i]));
 
         }
+        v_particles.push_back(particles);
 
 
 
@@ -474,21 +466,22 @@ float NormMaxA, NormMinA, NormMaxV,NormMinV,pressureMin,pressureMax,Wmax,Wmin;
 
 
 
-        std::cout << "created " << n_particles() << " particles." << std::endl;
+        std::cout << "created " << particles.size() << " particles." << std::endl;
+        v_particles.push_back(particles);
       }
 
 
-      void init_sphere(Vec Vi, Vec Vf,float jitter = 0.02, float spacing = 0.02,int type=2) {
+      void init_sphere(Vec Vi, Vec Vf,real jitter = 0.02, real spacing = 0.02,int type=2) {
 
         this->jitter = jitter;
         this->spacing = spacing;
 
         // fill half a [0,1]^2 box with particles
         vector<Vec> pos = sample_hex_sphere(spacing, jitter, Vi, Vf);
-
+        std::vector<Particle> particles;
         //particles.clear();
         for (int i = 0; i < pos.size(); ++i) {
-          particles.push_back(Particle(type,pos[i]));
+          particles.push_back(Particle(type,dx,pos[i]));
 
         }
 
@@ -498,26 +491,28 @@ float NormMaxA, NormMinA, NormMaxV,NormMinV,pressureMin,pressureMax,Wmax,Wmin;
 
 
 
-        std::cout << "created " << n_particles() << " particles." << std::endl;
+        std::cout << "created " << particles.size() << " particles." << std::endl;
+        v_particles.push_back(particles);
       }
   
-      void init( Vec Vi, Vec Vf,float jitter = 0.02, float spacing = 0.02,int type=2) {
+      void init( Vec Vi, Vec Vf,real jitter = 0.02, real spacing = 0.02,int type=2) {
 
         this->jitter = jitter;
         this->spacing = spacing;
 
         // fill half a [0,1]^2 box with particles
         vector<Vec> pos = sample_hex(spacing, jitter, Vi, Vf);
-
+        std::vector<Particle> particles;
 
         for (int i = 0; i < pos.size(); ++i) {
-          particles.push_back(Particle(type,pos[i]));
+          particles.push_back(Particle(type,dx,pos[i]));
 
 
         }
 
 
-        std::cout << "created " << n_particles() << " particles." << std::endl;
+        std::cout << "created " << particles.size() << " particles." << std::endl;
+        v_particles.push_back(particles);
       }
 
   void step() {
@@ -525,9 +520,11 @@ float NormMaxA, NormMinA, NormMaxV,NormMinV,pressureMin,pressureMax,Wmax,Wmin;
       NormMaxV=-100000.0;NormMinV=10000.0;
         std::memset(grid, 0, sizeof(grid));
   	// reset grid scratchpad
-
+int jj,ii;
         // P2G
-        for (auto &p : particles) {          // P2G
+        for(ii=0;ii<v_particles.size();ii++)
+        for (jj =0;jj<v_particles[ii].size();jj++) {          // P2G
+            Particle &p = v_particles[ii][jj];
           Vector3i base_coord =
               (p.x * inv_dx - Vec(0.5_f)).cast<int>();  // element-wise floor
           Vec fx = p.x * inv_dx - base_coord.cast<real>();
@@ -538,8 +535,8 @@ float NormMaxA, NormMinA, NormMaxV,NormMinV,pressureMin,pressureMax,Wmax,Wmin;
           real J = determinant(p.F);  //                         Current volume
 
           Mat cauchy;
-          if (p.type == 2) {
-            cauchy = Mat(0.02_f * E * (pow<1>(p.Jp) - 1));
+          if (p.type < 1) {
+            cauchy = Mat(params.eos_stiffness * (pow<1>(p.Jp) - 1));
           } else {
               auto e = std::exp(hardening * (1.0_f - p.Jp)), mu = mu_0 * e,
                    lambda = lambda_0 * e;
@@ -555,7 +552,7 @@ float NormMaxA, NormMinA, NormMaxV,NormMinV,pressureMin,pressureMax,Wmax,Wmin;
             cauchy = 2 * mu * (p.F - r) * transposed(p.F) + lambda * (J - 1) * J;
           }
           auto stress =  // Cauchy stress times dt and inv_dx
-              -4 * inv_dx * inv_dx *  dt * vol * cauchy;
+              -4 * inv_dx * inv_dx *  dt * J * cauchy;
           auto affine = stress + particle_mass * p.C;
           for (int i = 0; i < 3; i++)
             for (int j = 0; j < 3; j++)
@@ -633,7 +630,9 @@ float NormMaxA, NormMinA, NormMaxV,NormMinV,pressureMin,pressureMax,Wmax,Wmin;
         }
 
 Vec ox;
-for (auto &p : particles) {  // Grid to particle
+for(ii=0;ii<v_particles.size();ii++)
+for (jj =0;jj<v_particles[ii].size();jj++) {          // P2G
+    Particle &p = v_particles[ii][jj];
   Vector3i base_coord =
       (p.x * inv_dx - Vec(0.5_f)).cast<int>();  // element-wise floor
   Vec fx = p.x * inv_dx - base_coord.cast<real>();
@@ -651,8 +650,14 @@ for (auto &p : particles) {  // Grid to particle
       p.C +=
           4 * inv_dx * Mat::outer_product(weight * grid_v, dpos);  // APIC C
     }
-  p.x += dt * p.v;                       // Advection
-  if (p.type <= 1) {                     // plastic
+  Vec vdx =dt * p.v;                       // Advection
+  Vector vdxt(vdx.x,vdx.y,vdx.z);
+  bool tc=testAllCollision(v_particles[ii],jj,1.1*dx,vdxt);
+  if(tc==false)
+  {
+   p.x += vdx;
+  }
+  if (p.type > 0) {                     // plastic
     auto F = (Mat(1) + dt * p.C) * p.F;  // MLS-MPM F-update
     if (p.type == 1) {
       Mat svd_u, sig, svd_v;
@@ -677,84 +682,207 @@ for (auto &p : particles) {  // Grid to particle
   }
 
 
-  float tmpNormV;
+  real tmpNormV;
   Vector vi(p.v.x,p.v.y,p.v.z);
   tmpNormV=vi.norm();
   if(tmpNormV>NormMaxV)
    NormMaxV = tmpNormV;
   if(tmpNormV<NormMinV)
    NormMinV = tmpNormV;
-      // enforce boundaries (reflect at boundary, with restitution a)
-      //  Modified to 3d
 
-/*      if (pi.x.x +dx> 0.516) {
-        float penetration = (pi.x.x+dx - 0.516);
-        pi.x.x = 0.516-dx - params.a * penetration;
-        pi.x.y = ox.y + ( (params.a) * penetration) * params.dt * pi.v.y;
-        pi.x.z = ox.z + ( (params.a) * penetration) * params.dt * pi.v.z;
-        pi.v.x *= -params.a;
-        pi.v.y *= params.a;
-        pi.v.z *= params.a;
-      } else if (pi.x.x-dx < -0.516) {
-        float penetration = -pi.x.x-dx+0.516;
-        pi.x.x = -0.516+dx+params.a  * penetration;
-        pi.x.y = ox.y + ( (params.a ) * penetration) * params.dt * pi.v.y;
-        pi.x.z = ox.z + ( (params.a ) * penetration) * params.dt * pi.v.z;
-        pi.v.x *= -params.a ;
-        pi.v.y *= params.a ;
-        pi.v.z *= params.a ;
-      }
-      
-      if (pi.x.y-dx < -0.516) {
-        float penetration = pi.x.y-dx+0.516;
-        pi.x.x = ox.x + ( (params.a ) * penetration) * params.dt * pi.v.x;
-        pi.x.y = -0.516+dx+params.a  * penetration ;
-        pi.x.z = ox.z + ( (params.a ) * penetration) * params.dt * pi.v.z;
-
-        pi.v.x *= params.a ;
-        pi.v.y *= -params.a ;
-        pi.v.z *= params.a ;
-
-      }
-      if (pi.x.z+dx > 0.516) {
-        float penetration = pi.x.z+dx-0.516;
-        pi.x.x = ox.x + ( (params.a ) * penetration) * params.dt * pi.v.x;
-        pi.x.y = ox.y + ( (params.a ) * penetration) * params.dt * pi.v.y;
-        pi.x.z = 0.516-dx-params.a  * penetration ;
-
-        pi.v.x *= params.a ;
-        pi.v.y *= params.a ;
-        pi.v.z *= -params.a ;
-
-      }
-
-    if(pi.x.z-dx <- 0.516) {
-      float penetration = -pi.x.z-dx-0.516;
-        pi.x.x = ox.x + ( (params.a ) * penetration) * params.dt * pi.v.x;
-        pi.x.y = ox.y + ( (params.a ) * penetration) * params.dt * pi.v.y;
-        pi.x.z = -0.516+dx+params.a  * penetration;
-
-        pi.v.x *= params.a ;
-        pi.v.y *= params.a ;
-        pi.v.z *= -params.a ;
-
-      }
-*/
 
     }
 
     }
+
+
+  inline bool testAllCollision(std::vector<Particle> &particles,int pId, float r,Vector &ndx)
+  {
+
+    bool resp = false;
+    if(MalhaObst!=NULL)
+    {
+        Particle &p = particles[pId];
+        Vector3i base_coord =
+            (p.x * inv_dx).cast<int>();  // element-wise floor
+
+            int ii;
+            for(ii=0;ii<gridObst[base_coord.x][base_coord.y][base_coord.z].size();ii++)
+            {
+
+               if (TestCollisionRotation(meshHandlerObst,particles,gridObst[base_coord.x][base_coord.y][base_coord.z][ii],pId,r,ndx))
+               {
+                   auto &g = grid[base_coord.x][base_coord.y][base_coord.z];
+                resp= true;
+                g[0]=particles[pId].v.x;
+                g[1]=particles[pId].v.y;
+                g[2]=particles[pId].v.z;
+               }
+            }
+    }
+     /*  of::ofCellsIterator<TTraits> ico(&meshHandler);
+            for(ico.initialize(); ico.notFinish(); ++ico)
+            {
+
+               if (TestCollision(meshHandler,&ico,pId,r,ndx))
+                resp= true;
+            }*/
+            return resp;
+
+  }
+
+
+
+  inline float ImplicitLine(float p1x,float p1y,float p2x,float p2y,float px,float py)
+  {
+      float dx=(p2x-p1x);
+      float dy=(p2y-p1y);
+      float a =dy,b=-dx,c=(-p1x*dy+p1y*dx);
+      return a*px+b*py+c;
+  }
+
+  inline bool TestCollisionRotation(Handler<TMesh> &Mesh,std::vector<Particle> &particles,int cellId, int pId,float r, Vector &ndx)
+  {
+    Particle &pi = particles[pId];
+    Vector vnt(Mesh->getCell(cellId)->getNormalCoord(0),Mesh->getCell(cellId)->getNormalCoord(1),Mesh->getCell(cellId)->getNormalCoord(2));
+    Vector Pvn(pi.v.x,pi.v.y,pi.v.z);
+    float nv =Pvn.norm();
+    Pvn.normalize();
+    float vn = Pvn*vnt;
+    if(vn<0.0)
+    {
+
+       // Pvnpi.v;
+
+        Vector p1(Mesh->getVertex(Mesh->getCell(cellId)->getVertexId(0))->getCoord(0),Mesh->getVertex(Mesh->getCell(cellId)->getVertexId(0))->getCoord(1),Mesh->getVertex(Mesh->getCell(cellId)->getVertexId(0))->getCoord(2));
+        Vector px(pi.x.x,pi.x.y,pi.x.z);
+        float d = (px - p1)*vnt;
+        if(fabs(d)<2*r)
+        {
+        Vector p2(Mesh->getVertex(Mesh->getCell(cellId)->getVertexId(1))->getCoord(0),Mesh->getVertex(Mesh->getCell(cellId)->getVertexId(1))->getCoord(1),Mesh->getVertex(Mesh->getCell(cellId)->getVertexId(1))->getCoord(2));
+        Vector p3(Mesh->getVertex(Mesh->getCell(cellId)->getVertexId(2))->getCoord(0),Mesh->getVertex(Mesh->getCell(cellId)->getVertexId(2))->getCoord(1),Mesh->getVertex(Mesh->getCell(cellId)->getVertexId(2))->getCoord(2));
+        //Vector p=pi.x;
+        Vector p2p1(p2.x-p1.x,p2.y-p1.y,p2.z-p1.z);
+        Vector p3p1(p3.x-p1.x,p3.y-p1.y,p3.z-p1.z);
+        Vector pip1(pi.x.x-p1.x,pi.x.y-p1.y,pi.x.z-p1.z);
+        Vector vntx0(0.0,Mesh->getCell(cellId)->getNormalCoord(1),Mesh->getCell(cellId)->getNormalCoord(2));
+        vntx0.normalize();
+        Vector axey(0.0,1.0,0.0);
+        Vector axez(0.0,0.0,1.0);
+        Vector vaxex1(1,0,0);
+        Vector vaxez1(0,0,1);
+        Vector vaxey1(0,1,0);
+        double angle1 = vnt*vntx0;
+        vntx0.normalize();
+        double angle2 =vntx0*axey;
+
+        TQuaternion qz(angle1,vaxez1);
+
+        if(vnt.x<0.0)
+            qz=qz.inverse();
+
+        TQuaternion qx(angle2,vaxex1);
+        if(vntx0.z>0.0)
+            qx=qx.inverse();
+
+         TQuaternion qr=qz*qx;
+         qr.QuatRotation(&p2p1,&p2p1);
+         qr.QuatRotation(&p3p1,&p3p1);
+         qr.QuatRotation(&pip1,&pip1);
+         //qr.QuatRotation(&vnt,&vnt);
+         qr.QuatRotation(&Pvn,&Pvn);
+
+
+
+        /* qx.QuatRotation(&p2p1,&p2p1);
+         qx.QuatRotation(&p3p1,&p3p1);
+         qx.QuatRotation(&pip1,&pip1);
+         qx.QuatRotation(&vnt,&vnt);
+         qx.QuatRotation(&Pvn,&Pvn);*/
+         Vector p2p1N(p2p1.x,p2p1.y,p2p1.z);
+         p2p1N.normalize();
+         double angle3 = axez*p2p1N;
+         TQuaternion qy(angle3,vaxey1);
+         if(p2p1.x>0.0)
+             qy=qy.inverse();
+
+         qy.QuatRotation(&p2p1,&p2p1);
+         qy.QuatRotation(&p3p1,&p3p1);
+         qy.QuatRotation(&pip1,&pip1);
+         qy.QuatRotation(&Pvn,&Pvn);
+         float penetration =pip1.y-r;
+        float i1,i2;
+        i1 = ImplicitLine(0.0,p2p1.z,p3p1.x,p3p1.z,pip1.x,pip1.z);
+        i2 = ImplicitLine(0.0,0.0,p3p1.x,p3p1.z,pip1.x,pip1.z);
+        //(penetration<0.0)&&((pip1.x)>0.0)&&(i1>=0.0)&&(i2<=0.0) positive orientation
+        //(penetration<0.0)&&((pip1.x)<0.0)&&(i1<=0.0)&&(i2>=0.0) negative orientattion
+      //  std::cout <<"penetration = " << penetration << " pip1.x = " << pip1.x << " i1 = " << i1 << " i2 = " << i2 << std::endl;
+         if((penetration<0.0)&&((pip1.x)<0.0)&&(i1<=0.0)&&(i2>=0.0))
+         {
+             taichi::real factor=3.99;
+
+
+            pip1.y=r+ params.a  * (-1.0*penetration) + 0.001*rand01();
+            pip1.x+=( (factor*params.a ) * penetration) * dt * pi.v.x;
+            pip1.z+=( (factor*params.a ) * penetration) * dt * pi.v.z;
+            TQuaternion qiy=qy.inverse();
+            //TQuaternion qix=qx.inverse();
+            //TQuaternion qiz=qz.inverse();
+            TQuaternion qir=qr.inverse();//qiz*qix*qiy;
+
+            qiy.QuatRotation(&pip1,&pip1);
+            qir.QuatRotation(&pip1,&pip1);
+            //qix.QuatRotation(&pip1,&pip1);
+            //qiz.QuatRotation(&pip1,&pip1);
+
+            //qiz.QuatRotation(&vnt,&vnt);
+            Pvn.x *= factor*params.a ;
+            Pvn.y *= -params.a ;
+            Pvn.z *= factor*params.a ;
+            //
+            qiy.QuatRotation(&Pvn,&Pvn);
+            qir.QuatRotation(&Pvn,&Pvn);
+            //qix.QuatRotation(&Pvn,&Pvn);
+            //qiz.QuatRotation(&Pvn,&Pvn);
+           /* Vector univ = pi.v_new; univ.normalize();
+             Vector nv =   univ - 2.0*(univ*vnt)*vnt;
+             float c,normv=pi.v_new.norm();
+
+            nv.normalize();*/
+            pip1.x+=p1.x;pip1.y+=p1.y;pip1.z+=p1.z;
+            pi.v.x =nv*Pvn.x;pi.v.y =nv*Pvn.y;pi.v.z =nv*Pvn.z;
+
+
+              //pi.v = 0.5*(pi.v_new+pi.v_old);
+              pi.x.x=  pip1.x; pi.x.y=  pip1.y;pi.x.z=  pip1.z; //+0.001*rand01();
+
+
+              return true;
+         }
+         else {
+             return false;
+         }
+        }
+        else
+            return false;
+
+    }
+       else
+        return false;
+
+
+   }
 
   inline int n_particles() const {
-    return particles.size();
+    return v_particles.size();
   }
   
-  inline Particle const &particle(int i) const {
-    return particles[i];
+  inline Particle const &particle(int i, int j) const {
+    return v_particles[i][j];
   }
 
-  inline Particle &particle(int i) {
-    return particles[i];
+  inline Particle &particle(int i,int j) {
+    return v_particles[i][j];
   }
 
   inline void WriteScreenImage() {

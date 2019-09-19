@@ -10,24 +10,23 @@
  
  TColorRGBA blue(0.0,0.0,1.0);
  TColorRGBA lblue(0.5,0.5,1.0);
- TColorRGBA llblue(0.7,0.7,1.0);
+ TColorRGBA llblue(0.7,0.7,1.0,0.5);
  TColorRGBA dblue(0.0,0.0,0.7);
  TColorRGBA blue2(0.0,0.464, 0.75);
  TColorRGBA blue3(4.0/255.0,174.0/255.0, 242.0/255.0);
  TColorRGBA blue4(4.0/255.0,4.0/255.0, 201.0/255.0);
  TColorRGBA blue5(12.0/255.0,222.0/255.0, 249.0/255.0);
  TColorRGBA waterblue (37.0/255.0,109.0/255.0,123.0/255.0,0.5);
- TColorRGBA waterblue1 (59.0/255.0,131.0/255.0,225.0/255.0,0.25);
+ TColorRGBA waterblue1 (59.0/255.0,131.0/255.0,225.0/255.0,0.35);
  
  TColorRGBA dred(5.0,0.0,0.0);
  TColorRGBA red(1.0,0.0,0.0,1.0);
  TColorRGBA redb(1.0,0.0,0.0,0.3);
  TColorRGBA lred(1.0,0.5,0.5);
  TColorRGBA llred(1.0,0.6,0.6);
- TColorRGBA bloodred(203.0/255.0,40.0/255.0,33.0/255.0,0.8);
+ TColorRGBA bloodred(203.0/255.0,40.0/255.0,33.0/255.0,0.55);
  TColorRGBA cyan2(0.01, 0.75, 0.675);
  TColorRGBA lcyan2(0.21, 0.95, 0.875);
-
  TColorRGBA violeta(0.625, 0.179, 0.75);
  
  TColorRGBA lyellow(1.0,1.0,0.5);

@@ -1,5 +1,5 @@
-#ifndef KDTREE_HH
-#define KDTREE_HH
+#ifndef MYKDTREE_HH
+#define MYKDTREE_HH
 
 // for drawing routine
 #ifdef __APPLE__
@@ -10,7 +10,6 @@
 
 #include <vector>
 #include <algorithm>
-#include <limits>
 #include "vector.hh"
 
 class KdNode {
@@ -63,7 +62,7 @@ struct point_comp {
   }
 };
 
-class KdTree {
+class MyKdTree {
   float query_radius, query_radius2;
   int bucket_size;
   Vector bbox_min, bbox_max;
@@ -114,22 +113,25 @@ class KdTree {
                       splitCell(mid, end, divmin, bmax));
   }
   
-  // this works only in 2d
+  // this works only in 2d  -----------  Modified to 3D
   inline bool containsSphere(Vector const &x, Vector const &bmin, Vector const &bmax) const {
     float minx = x.x - query_radius;
     float maxx = x.x + query_radius;
     float miny = x.y - query_radius;
     float maxy = x.y + query_radius;
+    float minz = x.z - query_radius;
+    float maxz = x.z + query_radius;
     
     return 
       minx >= bmin.x && maxx < bmax.x &&
-      miny >= bmin.y && maxy < bmax.y;    
+      miny >= bmin.y && maxy < bmax.y  &&
+      minz >= bmin.z && maxz < bmax.z;    
   }
 
-  // 2D only!
+  // 2D only!  ---- Modified to 3D
   inline bool intersectsSphere(Vector const &x, Vector const &bmin, Vector const &bmax) const {
     float dist = 0;    
-    for(int i = 0; i < 2; ++i) {
+    for(int i = 0; i < 3; ++i) {
       if(x[i] < bmin[i]) {
         float d = bmin[i] - x[i];
         dist += d * d;
@@ -232,10 +234,10 @@ class KdTree {
   };
   
 public:
-  KdTree(int bucketsize = 10): bucket_size(bucketsize), root(NULL) {
+  MyKdTree(int bucketsize = 100): bucket_size(bucketsize), root(NULL) {
   }
   
-  ~KdTree() {
+  ~MyKdTree() {
     delete root;
   }
   
@@ -278,7 +280,7 @@ public:
     
     // compute bounding box
     bbox_min = bbox_max = positions[0].second;
-    // only 2D!
+    // only 2D!  ------ Modified to 3D
     for (int i = 0; i < positions.size(); ++i) {
       if (positions[i].second.x < bbox_min.x) {
         bbox_min.x = positions[i].second.x;
@@ -291,6 +293,12 @@ public:
       } else if (positions[i].second.y > bbox_max.y) {
         bbox_max.y = positions[i].second.y;
       }
+      
+      if (positions[i].second.z < bbox_min.z) {
+        bbox_min.z = positions[i].second.z;
+      } else if (positions[i].second.z > bbox_max.z) {
+        bbox_max.z = positions[i].second.z;
+      }
     }
     
     root = splitCell(positions.begin(), positions.end(), bbox_min, bbox_max);    
@@ -299,7 +307,10 @@ public:
   void neighbors(Vector const &x, std::vector<NeighborData> &nbs) const {
     nbs.clear();
     if (!root)
+    {
+      
       return;
+    }
 
     // descend down tree to smallest cell that fully contains query 
     KdNode const *node = root;
