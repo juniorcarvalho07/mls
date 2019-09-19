@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="MLS_MPM_3D"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/home/helton/mls/mls-mpm88_3d/build"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/home/helton/mls/mls-mpm88_3d/build/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -f &quot;/home/helton/mls/mls-mpm88_3d/build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/home/helton/mls/mls-mpm88_3d/build/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/home/helton/mls/mls-mpm88_3d/build/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="/home/helton/mls/mls-mpm88_3d/build"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/home/helton/mls/mls-mpm88_3d/build/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/make -f &quot;/home/helton/mls/mls-mpm88_3d/build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/home/helton/mls/mls-mpm88_3d/build/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/home/helton/mls/mls-mpm88_3d/build/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="mpm_3d">
+				<Option output="/home/helton/mls/mls-mpm88_3d/build/mpm_3d" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/helton/mls/mls-mpm88_3d/build"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/helton/mls/mls-mpm88_3d/VisOf"/>
+					<Add directory="/home/helton/mls/mls-mpm88_3d/VisOf/Utils"/>
+					<Add directory="/home/helton/mls/mls-mpm88_3d/VisOf/iterFunc"/>
+					<Add directory="/home/helton/mls/mls-mpm88_3d/of"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/home/helton/mls/mls-mpm88_3d/build/Makefile&quot;  VERBOSE=1 mpm_3d"/>
+					<CompileFile command="/usr/bin/make -f &quot;/home/helton/mls/mls-mpm88_3d/build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/home/helton/mls/mls-mpm88_3d/build/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/home/helton/mls/mls-mpm88_3d/build/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="mpm_3d/fast">
+				<Option output="/home/helton/mls/mls-mpm88_3d/build/mpm_3d" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/helton/mls/mls-mpm88_3d/build"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/helton/mls/mls-mpm88_3d/VisOf"/>
+					<Add directory="/home/helton/mls/mls-mpm88_3d/VisOf/Utils"/>
+					<Add directory="/home/helton/mls/mls-mpm88_3d/VisOf/iterFunc"/>
+					<Add directory="/home/helton/mls/mls-mpm88_3d/of"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/home/helton/mls/mls-mpm88_3d/build/Makefile&quot;  VERBOSE=1 mpm_3d/fast"/>
+					<CompileFile command="/usr/bin/make -f &quot;/home/helton/mls/mls-mpm88_3d/build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/home/helton/mls/mls-mpm88_3d/build/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/home/helton/mls/mls-mpm88_3d/build/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="/home/helton/mls/mls-mpm88_3d/build"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/home/helton/mls/mls-mpm88_3d/build/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/make -f &quot;/home/helton/mls/mls-mpm88_3d/build/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/home/helton/mls/mls-mpm88_3d/build/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/home/helton/mls/mls-mpm88_3d/build/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/home/helton/mls/mls-mpm88_3d/TrackBall.cpp">
+			<Option target="mpm_3d"/>
+		</Unit>
+		<Unit filename="/home/helton/mls/mls-mpm88_3d/TrackBall.h">
+			<Option target="mpm_3d"/>
+		</Unit>
+		<Unit filename="/home/helton/mls/mls-mpm88_3d/eig3.cpp">
+			<Option target="mpm_3d"/>
+		</Unit>
+		<Unit filename="/home/helton/mls/mls-mpm88_3d/eig3.h">
+			<Option target="mpm_3d"/>
+		</Unit>
+		<Unit filename="/home/helton/mls/mls-mpm88_3d/main.cpp">
+			<Option target="mpm_3d"/>
+		</Unit>
+		<Unit filename="/home/helton/mls/mls-mpm88_3d/mat3d.cpp">
+			<Option target="mpm_3d"/>
+		</Unit>
+		<Unit filename="/home/helton/mls/mls-mpm88_3d/mat3d.h">
+			<Option target="mpm_3d"/>
+		</Unit>
+		<Unit filename="/home/helton/mls/mls-mpm88_3d/polarDecomposition.cpp">
+			<Option target="mpm_3d"/>
+		</Unit>
+		<Unit filename="/home/helton/mls/mls-mpm88_3d/polarDecomposition.h">
+			<Option target="mpm_3d"/>
+		</Unit>
+		<Unit filename="/home/helton/mls/mls-mpm88_3d/scrInteractor.cpp">
+			<Option target="mpm_3d"/>
+		</Unit>
+		<Unit filename="/home/helton/mls/mls-mpm88_3d/scrInteractor.h">
+			<Option target="mpm_3d"/>
+		</Unit>
+		<Unit filename="/home/helton/mls/mls-mpm88_3d/vec3d.cpp">
+			<Option target="mpm_3d"/>
+		</Unit>
+		<Unit filename="/home/helton/mls/mls-mpm88_3d/vec3d.h">
+			<Option target="mpm_3d"/>
+		</Unit>
+		<Unit filename="/home/helton/mls/mls-mpm88_3d/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>
