@@ -1,4 +1,4 @@
-# Install script for directory: /home/helton/projetos/mls-mpm88_3d
+# Install script for directory: /home/helton/mls/mls-mpm88_3d
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -45,5 +45,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/helton/projetos/mls-mpm88_3d/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/helton/mls/mls-mpm88_3d/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

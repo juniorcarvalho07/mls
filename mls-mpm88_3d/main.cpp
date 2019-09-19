@@ -561,7 +561,7 @@ int main(int argc, char ** argv)
   MalhaObst = new TMesh();
    if(MalhaObst!=NULL)
    {
-    Reader.read(MalhaObst,"/home/helton/projetos/mls-mpm88_3d/off/splineit2corteTri.off");
+    Reader.read(MalhaObst,"/home/helton/mls/mls-mpm88_3d/off/splineit2corteTri.off");
         //Reader.read(MalhaObst,"/home/helton/Gdrive/mpm/off/splineit2corteTriRef.off");
      //Reader.read(MalhaObst,"/home/helton/projetos/mls-mpm88_3d/off/cup.off");
      //Reader.read(MalhaObst,"/home/helton/Gdrive/mpm/off/splineit2s.off");
@@ -685,7 +685,7 @@ int main(int argc, char ** argv)
         //mpm.init_sphere(Vec(0.7,0.8,0.35),Vec(0.92, 1.4, 0.65), 0.02,0.0225,0);
 
         //mpm.init(Vector(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.01,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.15,meshHandlerObst->getVertex(Vymax)->getCoord(2)+0.0055),Vector(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.045,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.02,meshHandlerObst->getVertex(Vymax)->getCoord(2)+0.055),0.02,0.006); //simpleit3corte
-        mpm.init(Vec(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.055,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.025,meshHandlerObst->getVertex(Vymax)->getCoord(2)-0.0555),Vec(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.165,meshHandlerObst->getVertex(Vymax)->getCoord(1)+0.4,meshHandlerObst->getVertex(Vymax)->getCoord(2)+0.015),0.02,0.01,-1); // splineit2corteTri
+        mpm.init(Vec(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.055,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.155,meshHandlerObst->getVertex(Vymax)->getCoord(2)-0.0555),Vec(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.165,meshHandlerObst->getVertex(Vymax)->getCoord(1)+0.45,meshHandlerObst->getVertex(Vymax)->getCoord(2)+0.015),0.02,0.01,-1); // splineit2corteTri
         //mpm.init(Vector(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.015,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.11,meshHandlerObst->getVertex(Vymax)->getCoord(2)-0.0255),Vector(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.05,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.04,meshHandlerObst->getVertex(Vymax)->getCoord(2)+0.0125),0.02,0.005); // splineit3corteTri
         //mpm.init(Vector(meshHandlerObst->getVertex(Vymax)->getCoord(0)-0.00,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.10,meshHandlerObst->getVertex(Vymax)->getCoord(2)-0.1),Vector(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.09,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.05,meshHandlerObst->getVertex(Vymax)->getCoord(2)-0.04),0.02,0.004);//needle
         //mpm.init(Vector(0.0-0.13,0.0+0.2,0.0-0.08),Vector(0.0+0.15,0.0+2.5,0.0+0.08),0.02,0.0261); //cup 2

@@ -652,7 +652,7 @@ for (jj =0;jj<v_particles[ii].size();jj++) {          // P2G
     }
   Vec vdx =dt * p.v;                       // Advection
   Vector vdxt(vdx.x,vdx.y,vdx.z);
-  bool tc=testAllCollision(v_particles[ii],jj,1.1*dx,vdxt);
+  bool tc=testAllCollision(v_particles[ii],jj,1.2*dx,vdxt);
   if(tc==false)
   {
    p.x += vdx;
