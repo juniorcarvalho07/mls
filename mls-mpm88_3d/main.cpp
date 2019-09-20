@@ -121,7 +121,7 @@ MLS_MPM mpm;
 
 scrInteractor *Interactor = new scrInteractor(screenW, screenH);
 
-bool running = false, drawgrid = false, drawsurface = false, drawhash = false, drawtree = false, saveImageFile=false, saveFile=false,vcolorok=false,showFPSok=false,screenMeshok=false;
+bool running = false, drawgrid = false, drawsurface = false, drawhash = false, drawtree = false, saveImageFile=false, saveFile=false,vcolorok=false,showFPSok=false,screenMeshok=false,savePovFile=false;
 Sphere3D pSphere;
 int niter=0;
 int impf=1;
@@ -253,13 +253,13 @@ TColorRGBA caux;
   if (drawsurface) {
       glEnable(GL_BLEND);
           glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    mpm.Vis.execute(mpm.v_particles,1.0*dx,1,impf);
+    mpm.Vis.execute(mpm.v_particles,1.0*dx,1,impf,savePovFile,true);
     glDisable(GL_BLEND);
   }
   if (screenMeshok) {
       glEnable(GL_BLEND);
           glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    mpm.Vis.execute(mpm.v_particles,0.5*dx,2,impf);
+    mpm.Vis.execute(mpm.v_particles,1.0*dx,2,impf);
     glDisable(GL_BLEND);
   }
   
@@ -387,6 +387,9 @@ void HandleKeyboard(unsigned char key, int x, int y){
       break;
   case 'v':
       vcolorok = !vcolorok;
+      break;
+    case 'p':
+      savePovFile = !savePovFile;
       break;
     case 'r':
       // reset

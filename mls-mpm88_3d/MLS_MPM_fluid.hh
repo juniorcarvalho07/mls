@@ -10,21 +10,6 @@
 #include "quaternion.h"
 #include "visualizer.hh"
 #include "ply.h"
-#include "of.h"
-#include "ofPlane.h"
-#include "ofOffPointsReader.h"
-#include "ofOffReader.h"
-#include "ofOffWriter.h"
-#include "ofList.h"
-#include "VisOf/Utils/Handler.hpp"
-#include "Point.hpp"
-#include "printof.hpp"
-#include "GL_Interactor.h"
-
-#include "VisOf/iterFunc/CommandComponent.hpp"
-#include "VisOf/iterFunc/MyCommands.hpp"
-
-#include "ofVertexStarIteratorSurfaceVertex.h"
 #define screenW 800
 #define screenH 600
 #define PI 3.14159265359
@@ -32,23 +17,6 @@
 //#include "GL_Interactor.h"
 
 
-//Define a malha a ser usada.
-typedef of::MyofDefault2D TTraits;
-typedef of::ofDefault2D TTraitsSSMesh;
-typedef of::ofDefault2D::sVertex TofVertex;
-typedef of::ofMesh<TTraits> TMesh;
-typedef of::ofMesh<TTraitsSSMesh> TMeshSSM;
-typedef of::ofPlane<TTraits> TPlane;
-typedef of::ofOffReader<TTraits> TReader;
-typedef of::ofOffWriter<TTraits> TWriter;
-typedef of::ofRuppert2D<TTraitsSSMesh> TruppertSSM;
-typedef Quaternion<real> TQuaternion;
-TMesh *malha;
-TMesh *MalhaObst;
-TReader Reader;
-TWriter Writer;
-Handler<TMesh> meshHandler;
-Handler<TMesh> meshHandlerObst;
 int Vymax;
 int Nint;
 

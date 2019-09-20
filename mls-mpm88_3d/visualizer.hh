@@ -11,6 +11,43 @@
 #include "spaceMesh.hh"
 #define sphereRadius 1.0
 
+#include "of.h"
+#include "ofPlane.h"
+#include "ofOffPointsReader.h"
+#include "ofOffReader.h"
+#include "ofOffWriter.h"
+#include "ofList.h"
+#include "VisOf/Utils/Handler.hpp"
+#include "Point.hpp"
+#include "printof.hpp"
+#include "GL_Interactor.h"
+
+#include "VisOf/iterFunc/CommandComponent.hpp"
+#include "VisOf/iterFunc/MyCommands.hpp"
+
+#include "ofVertexStarIteratorSurfaceVertex.h"
+
+
+//Define a malha a ser usada.
+typedef of::MyofDefault2D TTraits;
+typedef of::ofDefault2D TTraitsSSMesh;
+typedef of::ofDefault2D::sVertex TofVertex;
+typedef of::ofMesh<TTraits> TMesh;
+typedef of::ofMesh<TTraitsSSMesh> TMeshSSM;
+typedef of::ofPlane<TTraits> TPlane;
+typedef of::ofOffReader<TTraits> TReader;
+typedef of::ofOffWriter<TTraits> TWriter;
+typedef of::ofRuppert2D<TTraitsSSMesh> TruppertSSM;
+typedef Quaternion<real> TQuaternion;
+TMesh *malha;
+TMesh *MalhaObst;
+TReader Reader;
+TWriter Writer;
+Handler<TMesh> meshHandler;
+Handler<TMesh> meshHandlerObst;
+
+
+
 typedef std::vector<std::vector<NeighborData>> Tneighbors;
 
 
@@ -49,7 +86,7 @@ struct Intersector {
   public:
 
       //Thomas Lewinner Marching Cubes
-
+      int povRayFileNumber;
       MarchingCubesL mc ;
       SpaceMesh SM;
       std::vector<HashGrid> v_hash;
@@ -66,6 +103,7 @@ struct Intersector {
           SurfaceCells=90;
           Wmax=1.5;
           Wmin=0.0;
+          povRayFileNumber=0;
       }
       ~Visualizer(){}
       inline void incSurfaceCells()
@@ -362,11 +400,293 @@ struct Intersector {
 
      }
 
+      inline void generatePovRayFile(std::vector<Vector> &MCMeshPoints,std::vector<Vector> &normals,std::vector<std::vector<unsigned int> > &polys,bool boxok=false)
+      {
+        char fname[32];
+        int i;
+        sprintf(fname, "%s_%04d.pov", "povRayScreen",
+                this->povRayFileNumber);
+        ofstream dataStream;
+        dataStream.open(fname, ios::out);
+        dataStream << "#version 3.6;\n"
+                "global_settings{assumed_gamma 1.0}\n"
+                "#default{ finish{ ambient 0.1 diffuse 0.9 }}\n";
+
+        dataStream << "#include \"colors.inc\"\n"
+                "#include \"textures.inc\"\n"
+                "#include \"woods.inc\"\n";
+
+    //background
+
+        dataStream << "background { color White }\n";
+
+    //camera
+        dataStream << "camera{ location   < -0.9, 2.5 ,-5.0>\n"
+                "look_at <0.5 , 0.65 , 0.0>\n"
+                "right x*image_width/image_height\n"
+                "angle 25 }\n";
+
+    // light
+        dataStream << "light_source\n"
+    "{ <200, 200, -250>/50, 1\n"
+      "fade_distance 5 fade_power 2\n"
+      "area_light x*3, y*3, 12, 12 circular orient adaptive 0\n"
+    "}\n"
+    "light_source\n"
+    "{ <-500, 250, -150>/50, <1,.8,.4>\n"
+      "fade_distance 6 fade_power 2\n"
+      "area_light x*3, y*3, 12, 12 circular orient adaptive 0\n"
+    "}\n"
+    "light_source\n"
+    "{ <250, 300, 500>/50, <.3,.8,1>\n"
+      "fade_distance 5 fade_power 2\n"
+      "area_light x*3, y*3, 12, 12 circular orient adaptive 0\n"
+    "}\n";
+    // Floor
+      dataStream <<"  #declare Floor_Texture =\n"
+        "texture { pigment { P_WoodGrain18A color_map { M_Wood18A }}}\n"
+        "texture { pigment { P_WoodGrain12A color_map { M_Wood18B }}}\n"
+        "texture {\n"
+            "pigment { P_WoodGrain12B color_map { M_Wood18B }}\n"
+            "finish { reflection 0.3 }\n"
+        "}\n";
+
+     dataStream << "#declare T_Glass = texture {   pigment { color red 0.85 green 0.45 blue 0.45 filter 0.95 }\n"
+       "finish {\n"
+          "ambient 0.0\n"
+          "diffuse 0.0\n"
+          "reflection 0.3\n"
+          "phong 0.3\n"
+          "phong_size 90\n"
+       "}\n"
+    "}\n";
+
+     dataStream << "#declare Tc = texture {\n"
+     "pigment{color rgb<184.0/255.0,183.0/255.0,153.0/255.0>}\n"
+        "finish { diffuse 0.9 phong 0.0 reflection 0.5} \n"
+    "}\n";
+    //water
+
+
+    dataStream << "#declare Skin =\n"
+     "texture {\n"
+                    "pigment { White }\n"
+                    "normal {\n"
+                        "wood ramp_wave\n"
+                        "slope_map {\n"
+                            "[ 0.00 <0,0> ]\n"
+                            "[ 0.40 <0.5,1> ]\n"
+                            "[ 0.80 <1,0> ]\n"
+                            "[ 0.90 <0.1,-1> ]\n"
+                            "[ 1.00 <0,0> ]\n"
+                        "}\n"
+                        "bump_size 0.03\n"
+                        "turbulence 0.1\n"
+                        "rotate x*-75\n"
+                        "translate z*-10\n"
+                        "rotate y*30\n"
+                        "scale .05\n"
+                    "}\n"
+                "}\n";
+
+
+     //blood
+    dataStream << "#declare Wine = pigment{color red 1.0 filter 0.65};\n";
+
+    //needle
+    //dataStream << "#declare Wine = pigment{color red 0.65 green 0.65 blue 0.95 filter 0.65};\n";
+
+    dataStream << "#declare Liquid = finish { reflection 0.05 }\n";
+
+    dataStream << "#declare PlankNormal =\n"
+      "normal\n"
+      "{ gradient x 2 slope_map { [0 <0,1>][.05 <1,0>][.95 <1,0>][1 <0,-1>] }\n"
+        "scale 0.2\n"
+      "};\n";
+
+    dataStream << "#declare C_White_Wine = <221,24,25>/255;\n"
+        "#declare T_wine =\n"
+        "texture {\n"
+            "pigment {\n"
+                "color rgbf <C_White_Wine.x, C_White_Wine.y, C_White_Wine.z, 0.62>\n"
+            "}\n"
+            "finish {\n"
+                "specular 0.6\n"
+                "roughness 0.002\n"
+                "ambient 0\n"
+                "diffuse 0\n"
+                   "reflection {\n"
+                        "0.1*C_White_Wine, 0.4*C_White_Wine\n"
+                        "fresnel on\n"
+                        "metallic 1\n"
+                    "}\n"
+                    "conserve_energy\n"
+               "}\n"
+        "}\n";
+
+    dataStream << "plane\n"
+    "{ y, -0.006\n"
+      "material\n"
+      "{ texture{Floor_Texture}}\n"
+      //"}\n"
+      //"finish { specular .4 reflection .1 }\n"
+    "}\n";
+
+
+    //obstacle
+
+
+           if(boxok)
+           {
+         dataStream << "mesh {\n";
+         for( i=2;i< malha->getNumberOfCells();i++)
+         {
+           dataStream << "triangle { <" << malha->getVertex(malha->getCell(i)->getVertexId(0))->getCoord(0) << ", "<< malha->getVertex(malha->getCell(i)->getVertexId(0))->getCoord(1) << ", " << malha->getVertex(malha->getCell(i)->getVertexId(0))->getCoord(2) << ">,\n"
+           "<" << malha->getVertex(malha->getCell(i)->getVertexId(1))->getCoord(0) << ", "<< malha->getVertex(malha->getCell(i)->getVertexId(1))->getCoord(1) << ", " << malha->getVertex(malha->getCell(i)->getVertexId(1))->getCoord(2) << ">,\n"
+           "<" << malha->getVertex(malha->getCell(i)->getVertexId(2))->getCoord(0) << ", "<< malha->getVertex(malha->getCell(i)->getVertexId(2))->getCoord(1) << ", " << malha->getVertex(malha->getCell(i)->getVertexId(2))->getCoord(2) << ">}\n";
+         }
+
+         dataStream << "texture {\n"
+          "Glass\n"
+        "}\n";
+         dataStream << "}\n";
+           }
+
+
+
+            if(MalhaObst!=NULL)
+            {
+             dataStream << "mesh2 {\n";
+
+         dataStream << "vertex_vectors {\n";
+          dataStream <<  MalhaObst->getNumberOfVertices() << ",\n";
+
+          for( i=0;i< MalhaObst->getNumberOfVertices()-1;i++)
+            {
+
+
+            dataStream << "< " <<MalhaObst->getVertex(i)->getCoord(0) << ", " << MalhaObst->getVertex(i)->getCoord(1) << ", " << MalhaObst->getVertex(i)->getCoord(2) << " >,\n";
+
+
+        }
+        dataStream << "< " <<MalhaObst->getVertex(i)->getCoord(0) << ", " << MalhaObst->getVertex(i)->getCoord(1) << ", " << MalhaObst->getVertex(i)->getCoord(2) << " >\n";
+        dataStream << "}\n";
+
+          dataStream << "normal_vectors {\n";
+          dataStream <<  MalhaObst->getNumberOfVertices() << ",\n";
+
+          for( i=0;i< MalhaObst->getNumberOfVertices()-1;i++)
+            {
+
+
+            dataStream << "< " <<MalhaObst->getVertex(i)->getNormalCoord(0) << ", " << MalhaObst->getVertex(i)->getNormalCoord(2) << ", " << MalhaObst->getVertex(i)->getNormalCoord(2) << " >,\n";
+
+
+        }
+        dataStream << "< " <<MalhaObst->getVertex(i)->getNormalCoord(0) << ", " << MalhaObst->getVertex(i)->getNormalCoord(2) << ", " << MalhaObst->getVertex(i)->getNormalCoord(2) << " >\n";
+        dataStream << "}\n";
+
+        dataStream << "face_indices {\n";
+          dataStream <<  MalhaObst->getNumberOfCells() << ",\n";
+
+          for( i=0;i< MalhaObst->getNumberOfCells()-1;i++)
+            {
+
+
+            dataStream << "< " <<MalhaObst->getCell(i)->getVertexId(0) << ", " << MalhaObst->getCell(i)->getVertexId(1) << ", " << MalhaObst->getCell(i)->getVertexId(2) << " >,\n";
+
+
+        }
+        dataStream << "< " <<MalhaObst->getCell(i)->getVertexId(0) << ", " << MalhaObst->getCell(i)->getVertexId(1) << ", " << MalhaObst->getCell(i)->getVertexId(2) << " >\n";
+        dataStream << "}\n";
+
+
+
+            /*for( i=0;i< MalhaObst->getNumberOfCells();i++)
+            {
+                    dataStream << "triangle {\n";
+                    dataStream << "< " << MalhaObst->getVertex(MalhaObst->getCell(i)->getVertexId(0))->getCoord(0) << ", " << MalhaObst->getVertex(MalhaObst->getCell(i)->getVertexId(0))->getCoord(1) << ", " << MalhaObst->getVertex(MalhaObst->getCell(i)->getVertexId(0))->getCoord(2) << " >,\n";
+                    dataStream << "< " << MalhaObst->getVertex(MalhaObst->getCell(i)->getVertexId(1))->getCoord(0) << ", " << MalhaObst->getVertex(MalhaObst->getCell(i)->getVertexId(1))->getCoord(1) << ", " << MalhaObst->getVertex(MalhaObst->getCell(i)->getVertexId(1))->getCoord(2) << " >,\n";
+                    dataStream << "< " << MalhaObst->getVertex(MalhaObst->getCell(i)->getVertexId(2))->getCoord(0) << ", " << MalhaObst->getVertex(MalhaObst->getCell(i)->getVertexId(2))->getCoord(1) << ", " << MalhaObst->getVertex(MalhaObst->getCell(i)->getVertexId(2))->getCoord(2) << " > }\n";
+            }*/
+            dataStream << "texture {\n";
+       dataStream << " T_Glass } \n"; //for blood
+        //dataStream << " Skin } \n"; //for water
+
+         dataStream << "}\n";
+        }
+
+
+
+    // fluid
+
+          dataStream << "mesh2 {\n";
+
+          dataStream << "vertex_vectors {\n";
+          dataStream <<  MCMeshPoints.size() << ",\n";
+          int Msize = MCMeshPoints.size();
+          for( i=0;i< Msize-1;i++)
+            {
+
+
+            dataStream << "< " <<MCMeshPoints[i].x << ", " << MCMeshPoints[i].y << ", " << MCMeshPoints[i].z << " >,\n";
+
+
+        }
+        dataStream << "< " <<MCMeshPoints[i].x << ", " << MCMeshPoints[i].y << ", " << MCMeshPoints[i].z << " >\n";
+        dataStream << "}\n";
+
+          dataStream << "normal_vectors {\n";
+          dataStream <<  normals.size() << ",\n";
+
+          for( i=0;i< normals.size()-1;i++)
+            {
+
+
+            dataStream << "< " <<normals[i].x << ", " << normals[i].y << ", " << normals[i].z << " >,\n";
+
+
+        }
+        dataStream << "< " <<normals[i].x << ", " << normals[i].y << ", " << normals[i].z << " >\n";
+        dataStream << "}\n";
+
+        dataStream << "face_indices {\n";
+          dataStream <<  polys.size() << ",\n";
+
+          for( i=0;i< polys.size()-1;i++)
+            {
+
+
+            dataStream << "< " <<polys[i][0] << ", " << polys[i][1] << ", " << polys[i][2] << " >,\n";
+
+
+        }
+        dataStream << "< " <<polys[i][0] << ", " << polys[i][1] << ", " << polys[i][2] << " >,\n";
+        dataStream << "}\n";
+
+
+
+       dataStream << "material{\n";
+      dataStream << "texture{\n";
+        dataStream << "T_wine}\n"; // end of texture T_wine fro water -- Wine for blood
+
+      dataStream << "interior{\n"; // ior 1.33\n";
+                 dataStream << "fade_power 1001\n";
+                 dataStream << "fade_distance 0.25\n";
+                 dataStream << "fade_color <0.7,0.7,1.0>\n";
+                 dataStream << "caustics 0.16\n";
+       dataStream << "}\n"; // end of interior
+     dataStream << "}\n"; // end of material
+        dataStream << "}\n"; //end of file
+        dataStream.close();
+        this->povRayFileNumber++;
+  }
+
 inline void execute(std::vector<std::vector<Particle>> &v_particles,float h,unsigned int mode =1,unsigned int impf=1,bool savepovFile=false, bool boxok=false)
 {
     int i;
     taichi::real radius=2.5;
-    SurfaceCells=80;
+    SurfaceCells=90;
     if (impf==1)
     {
             radius=3.5;
@@ -581,8 +901,8 @@ inline void drawSurfaceGrid(TColorRGBA c,bounding_box &bbox) {
       mc.clean_all() ;
 
 
-      //if(savepovFile)
-       //generatePovRayFile(MCMeshPoints,normals,intersect.polys,boxok);
+      if(savepovFile)
+       generatePovRayFile(MCMeshPoints,normals,intersect.polys,boxok);
 
         DrawMesh(MCMeshPoints,normals,intersect.polys,c,false);
     }
@@ -596,7 +916,7 @@ inline void drawSurfaceGrid(TColorRGBA c,bounding_box &bbox) {
      case 2:
     {
 
-        SM.setupDephMap(particles,3.0*h,true,false,false,false,false);
+        SM.setupDephMap(particles,1.0*h,true,false,false,false,false);
     }
 
 }
