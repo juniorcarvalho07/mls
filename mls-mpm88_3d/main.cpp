@@ -264,13 +264,6 @@ TColorRGBA caux;
   }
   
 
-  if(MalhaObst!=NULL)
-  {
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-      PrintObst->SmoothFaces(redb);
-      PrintObst->Edges(lgrey);
-      glDisable(GL_BLEND);
-  }
 
 
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -286,6 +279,15 @@ TColorRGBA caux;
  Print->Face(9,whiteo);
 
  glDisable(GL_BLEND);
+
+ if(MalhaObst!=NULL)
+ {
+     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+     PrintObst->SmoothFaces(redb);
+     PrintObst->Edges(lgrey);
+     glDisable(GL_BLEND);
+ }
+
 
 if(showFPSok)
     showFPS(FPSf);
@@ -558,12 +560,12 @@ int main(int argc, char ** argv)
 
    constructBox();
    //std::cout<< std::endl<< "aqui"<<std::endl<<std::endl;
-  //MalhaObst = new TMesh();
+  MalhaObst = new TMesh();
    if(MalhaObst!=NULL)
    {
-    Reader.read(MalhaObst,"/home/helton/mls/mls-mpm88_3d/off/splineit2corteTri.off");
+    //Reader.read(MalhaObst,"/home/helton/mls/mls-mpm88_3d/off/splineit2corteTri.off");
         //Reader.read(MalhaObst,"/home/helton/Gdrive/mpm/off/splineit2corteTriRef.off");
-     //Reader.read(MalhaObst,"/home/helton/projetos/mls-mpm88_3d/off/cup.off");
+     Reader.read(MalhaObst,"/home/helton/mls/mls-mpm88_3d/off/cup.off");
      //Reader.read(MalhaObst,"/home/helton/Gdrive/mpm/off/splineit2s.off");
      //Reader.read(MalhaObst,"/home/helton/Gdrive/mpm/off/bunny200Points1.off");
       // Reader.read(MalhaObst,"/home/helton/Dropbox/mpm/off/cross.off");
@@ -634,9 +636,9 @@ int main(int argc, char ** argv)
         if(maxdim < fabs(y2 - y1)) maxdim = fabs(y2 - y1);
         if(maxdim < fabs(z2 - z1)) maxdim = fabs(z2 - z1);
         for(ivo.initialize(); ivo.notFinish(); ++ivo){
-          ivo->setCoord(0,(ivo->getCoord(0)/(maxdim*0.8))); // 0.7 needle  1.25 othewise
-          ivo->setCoord(1,(ivo->getCoord(1)/(maxdim*1.2)));
-          ivo->setCoord(2,(ivo->getCoord(2)/(maxdim*0.8))); //0.7 needle 1.25 othewise
+          ivo->setCoord(0,(ivo->getCoord(0)/(maxdim*1.5))); // 0.7 needle  1.25 othewise
+          ivo->setCoord(1,(ivo->getCoord(1)/(maxdim*1.5)));
+          ivo->setCoord(2,(ivo->getCoord(2)/(maxdim*1.5))); //0.7 needle 1.25 othewise
         }
         ivo.initialize();
         x1 = x2 = ivo->getCoord(0);
@@ -667,7 +669,7 @@ int main(int argc, char ** argv)
 
         for(ivo.initialize(); ivo.notFinish(); ++ivo){
           ivo->setCoord(0,(ivo->getCoord(0)+(center[0]-centerObst[0])));
-          ivo->setCoord(1,(ivo->getCoord(1)+(center[1]-centerObst[1])-0.2)); // -0.1 vaso -0.6 bunny -0.25 cup 0.0 cup2 +0.1 needle  0.0 cross
+          ivo->setCoord(1,(ivo->getCoord(1)+(center[1]-centerObst[1])-0.5)); // -0.1 vaso -0.6 bunny -0.25 cup 0.0 cup2 +0.1 needle  0.0 cross
           ivo->setCoord(2,(ivo->getCoord(2)+(center[2]-centerObst[2])));
         }
         //Writer.write(MalhaObst,"/home/helton/Dropbox/mpm/off/needleref_scale.off");
@@ -679,11 +681,11 @@ int main(int argc, char ** argv)
 
         //mpm.init(Vec(0.0+0.15,0.0+0.5,0.0+0.15),Vec(0.0+0.5,0.0+1.0,0.0+0.85),0.0,0.025,0); //Dambreak
         //mpm.init_sphere(Vec(0.25,0.3,0.35),Vec(0.40, 0.8, 0.65), 0.02,0.0225,1);
-        mpm.init_sphere(Vec(1.1,0.55,0.25),Vec(1.32, 1.3, 0.80), 0.02,0.02,0);
-        mpm.init_sphere(Vec(0.25,0.8,0.35),Vec(0.4, 1.1, 0.65), 0.02,0.0225,1);
-        mpm.init_sphere(Vec(0.65,0.8,0.35),Vec(0.8, 1.1, 0.65), 0.02,0.0225,2);
+        //mpm.init_sphere(Vec(1.1,0.55,0.25),Vec(1.32, 1.3, 0.80), 0.02,0.02,0);
+        //mpm.init_sphere(Vec(0.25,0.8,0.35),Vec(0.4, 1.1, 0.65), 0.02,0.0225,1);
+        //mpm.init_sphere(Vec(0.65,0.8,0.35),Vec(0.8, 1.1, 0.65), 0.02,0.0225,2);
         //mpm.init_sphere(Vec(0.7,0.8,0.35),Vec(0.92, 1.4, 0.65), 0.02,0.0225,0);
-
+        mpm.init(Vec(0.0+0.67,0.0+0.5,0.0+0.35),Vec(0.0+0.97,0.0+1.4,0.0+0.65),0.0,0.02,0);
         //mpm.init(Vector(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.01,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.15,meshHandlerObst->getVertex(Vymax)->getCoord(2)+0.0055),Vector(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.045,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.02,meshHandlerObst->getVertex(Vymax)->getCoord(2)+0.055),0.02,0.006); //simpleit3corte
         //mpm.init(Vec(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.055,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.155,meshHandlerObst->getVertex(Vymax)->getCoord(2)-0.0555),Vec(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.165,meshHandlerObst->getVertex(Vymax)->getCoord(1)+0.45,meshHandlerObst->getVertex(Vymax)->getCoord(2)+0.015),0.02,0.01,-1); // splineit2corteTri
         //mpm.init(Vector(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.015,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.11,meshHandlerObst->getVertex(Vymax)->getCoord(2)-0.0255),Vector(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.05,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.04,meshHandlerObst->getVertex(Vymax)->getCoord(2)+0.0125),0.02,0.005); // splineit3corteTri
@@ -707,7 +709,7 @@ int main(int argc, char ** argv)
         of::ofCellsIterator<TTraits> ico1(&meshHandlerObst);
             for(ico1.initialize(); ico1.notFinish(); ++ico1)
             {
-             mpm.ComputeTriangleMeshNormal(MalhaObst,&ico1,-1);
+             mpm.ComputeTriangleMeshNormal(MalhaObst,&ico1,1);
              //if(cc==1)
               //std::cout << " n[0] = " << ico->getNormalCoord(0) << " n[1] = " << ico->getNormalCoord(1) << " n[2] = " << ico->getNormalCoord(2) << std::endl;
              cc++;

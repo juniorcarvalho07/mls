@@ -817,7 +817,7 @@ for (jj =0;jj<v_particles[ii].size();jj++) {          // P2G
         //(penetration<0.0)&&((pip1.x)>0.0)&&(i1>=0.0)&&(i2<=0.0) positive orientation
         //(penetration<0.0)&&((pip1.x)<0.0)&&(i1<=0.0)&&(i2>=0.0) negative orientattion
       //  std::cout <<"penetration = " << penetration << " pip1.x = " << pip1.x << " i1 = " << i1 << " i2 = " << i2 << std::endl;
-         if((penetration<0.0)&&((pip1.x)<0.0)&&(i1<=0.0)&&(i2>=0.0))
+         if((penetration<0.0)&&((pip1.x)>0.0)&&(i1>=0.0)&&(i2<=0.0))
          {
              taichi::real factor=3.99;
 
