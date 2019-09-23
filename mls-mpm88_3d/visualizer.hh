@@ -96,9 +96,11 @@ struct Intersector {
       int xsurfacecells, ysurfacecells,zsurfacecells;
       taichi::real cellsizex,cellsizey,cellsizez;
       taichi::real isovalue,Wmax,Wmin;
-      Intersector intersect;
       int SurfaceCells;
        std::vector<taichi::real> value;
+       std::vector<std::vector<Vector>> MCMeshPoints_vector;
+       std::vector<std::vector<Vector>> normals_vector;
+       std::vector<Intersector> intersector_vector;
       Visualizer(){
           SurfaceCells=90;
           Wmax=1.5;
@@ -400,10 +402,10 @@ struct Intersector {
 
      }
 
-      inline void generatePovRayFile(std::vector<Vector> &MCMeshPoints,std::vector<Vector> &normals,std::vector<std::vector<unsigned int> > &polys,bool boxok=false)
+      inline void generatePovRayFile(std::vector<std::vector<Vector>> &MCMeshPoints,std::vector<std::vector<Vector>> &normals,std::vector<Intersector> &I,bool boxok=false)
       {
         char fname[32];
-        int i;
+        int i,j;
         sprintf(fname, "%s_%04d.pov", "povRayScreen",
                 this->povRayFileNumber);
         ofstream dataStream;
@@ -422,7 +424,7 @@ struct Intersector {
 
     //camera
         dataStream << "camera{ location   < -0.9, 2.5 ,-5.0>\n"
-                "look_at <0.5 , 0.65 , 0.0>\n"
+                "look_at <0.5 , 0.85 , 0.0>\n"
                 "right x*image_width/image_height\n"
                 "angle 25 }\n";
 
@@ -619,49 +621,50 @@ struct Intersector {
 
 
     // fluid
-
+    for (int i =0;i<MCMeshPoints.size();i++)
+    {
           dataStream << "mesh2 {\n";
 
           dataStream << "vertex_vectors {\n";
-          dataStream <<  MCMeshPoints.size() << ",\n";
-          int Msize = MCMeshPoints.size();
-          for( i=0;i< Msize-1;i++)
+          dataStream <<  MCMeshPoints[i].size() << ",\n";
+          int Msize = MCMeshPoints[i].size();
+          for( j=0;j< Msize-1;j++)
             {
 
 
-            dataStream << "< " <<MCMeshPoints[i].x << ", " << MCMeshPoints[i].y << ", " << MCMeshPoints[i].z << " >,\n";
+            dataStream << "< " <<MCMeshPoints[i][j].x << ", " << MCMeshPoints[i][j].y << ", " << MCMeshPoints[i][i].z << " >,\n";
 
 
         }
-        dataStream << "< " <<MCMeshPoints[i].x << ", " << MCMeshPoints[i].y << ", " << MCMeshPoints[i].z << " >\n";
+        dataStream << "< " <<MCMeshPoints[i][j].x << ", " << MCMeshPoints[i][j].y << ", " << MCMeshPoints[i][j].z << " >\n";
         dataStream << "}\n";
 
           dataStream << "normal_vectors {\n";
-          dataStream <<  normals.size() << ",\n";
+          dataStream <<  normals[i].size() << ",\n";
 
-          for( i=0;i< normals.size()-1;i++)
+          for( j=0;j< normals[i].size()-1;j++)
             {
 
 
-            dataStream << "< " <<normals[i].x << ", " << normals[i].y << ", " << normals[i].z << " >,\n";
+            dataStream << "< " <<normals[i][j].x << ", " << normals[i][j].y << ", " << normals[i][j].z << " >,\n";
 
 
         }
-        dataStream << "< " <<normals[i].x << ", " << normals[i].y << ", " << normals[i].z << " >\n";
+        dataStream << "< " <<normals[i][j].x << ", " << normals[i][j].y << ", " << normals[i][j].z << " >\n";
         dataStream << "}\n";
 
         dataStream << "face_indices {\n";
-          dataStream <<  polys.size() << ",\n";
+          dataStream <<  I[i].polys.size() << ",\n";
 
-          for( i=0;i< polys.size()-1;i++)
+          for( j=0;j< I[i].polys.size()-1;j++)
             {
 
 
-            dataStream << "< " <<polys[i][0] << ", " << polys[i][1] << ", " << polys[i][2] << " >,\n";
+            dataStream << "< " <<I[i].polys[j][0] << ", " << I[i].polys[j][1] << ", " << I[i].polys[j][2] << " >,\n";
 
 
         }
-        dataStream << "< " <<polys[i][0] << ", " << polys[i][1] << ", " << polys[i][2] << " >,\n";
+        dataStream << "< " <<I[i].polys[j][0] << ", " << I[i].polys[j][1] << ", " << I[i].polys[j][2] << " >,\n";
         dataStream << "}\n";
 
 
@@ -678,6 +681,7 @@ struct Intersector {
        dataStream << "}\n"; // end of interior
      dataStream << "}\n"; // end of material
         dataStream << "}\n"; //end of file
+     }
         dataStream.close();
         this->povRayFileNumber++;
   }
@@ -709,6 +713,12 @@ inline void execute(std::vector<std::vector<Particle>> &v_particles,float h,unsi
     {
         drawSurface(v_particles[i][0].color,h,v_particles[i],v_hash[i],v_bbox[i],SurfaceCells, mode,impf,savepovFile,boxok);
     }
+
+    if(savepovFile)
+        generatePovRayFile(MCMeshPoints_vector,normals_vector,intersector_vector,boxok);
+    MCMeshPoints_vector.clear();
+    normals_vector.clear();
+    intersector_vector.clear();
 }
 
 
@@ -802,7 +812,9 @@ inline void drawSurfaceGrid(TColorRGBA c,bounding_box &bbox) {
          mc.init_all();
         //ofstream dataStream;
      std::vector<Vector> MCMeshPoints;
+
      std::vector<Vector> normals;
+     Intersector intersect;
 
     taichi::real sum,aux;
     value.clear();
@@ -901,16 +913,20 @@ inline void drawSurfaceGrid(TColorRGBA c,bounding_box &bbox) {
       mc.clean_all() ;
 
 
-      if(savepovFile)
-       generatePovRayFile(MCMeshPoints,normals,intersect.polys,boxok);
+      //if(savepovFile)
+        //generatePovRayFile(MCMeshPoints,normals,intersect.polys,boxok);
 
         DrawMesh(MCMeshPoints,normals,intersect.polys,c,false);
+        MCMeshPoints_vector.push_back(MCMeshPoints);
+        normals_vector.push_back(normals);
+        intersector_vector.push_back(intersect);
+
     }
 
 
-     intersect.auxVector->clear();
-     intersect.polys.clear();
-     delete intersect.auxVector;
+     //intersect.auxVector->clear();
+     //intersect.polys.clear();
+     //delete intersect.auxVector;
     }
         break;
      case 2:
