@@ -52,7 +52,7 @@ typedef std::vector<std::vector<NeighborData>> Tneighbors;
 
 
 struct Intersector {
-
+int type;
  std::vector<Vector> *auxVector;
  std::vector< std::vector<unsigned int> > polys;
    //coordinates
@@ -506,7 +506,8 @@ struct Intersector {
         "scale 0.2\n"
       "};\n";
 
-    dataStream << "#declare C_White_Wine = <221,24,25>/255;\n"
+    dataStream << "#declare C_White_Wine = <221,241,251"
+                  ">/255;\n"
         "#declare T_wine =\n"
         "texture {\n"
             "pigment {\n"
@@ -632,7 +633,7 @@ struct Intersector {
             {
 
 
-            dataStream << "< " <<MCMeshPoints[i][j].x << ", " << MCMeshPoints[i][j].y << ", " << MCMeshPoints[i][i].z << " >,\n";
+            dataStream << "< " <<MCMeshPoints[i][j].x << ", " << MCMeshPoints[i][j].y << ", " << MCMeshPoints[i][j].z << " >,\n";
 
 
         }
@@ -668,20 +669,66 @@ struct Intersector {
         dataStream << "}\n";
 
 
+switch (I[i].type){
 
-       dataStream << "material{\n";
-      dataStream << "texture{\n";
-        dataStream << "T_wine}\n"; // end of texture T_wine fro water -- Wine for blood
+case -1:
+       {dataStream << "material{\n";
+            dataStream << "texture{\n";
+            dataStream << "Wine}\n"; // end of texture T_wine fro water -- Wine for blood
 
-      dataStream << "interior{\n"; // ior 1.33\n";
-                 dataStream << "fade_power 1001\n";
-                 dataStream << "fade_distance 0.25\n";
-                 dataStream << "fade_color <0.7,0.7,1.0>\n";
-                 dataStream << "caustics 0.16\n";
-       dataStream << "}\n"; // end of interior
-     dataStream << "}\n"; // end of material
-        dataStream << "}\n"; //end of file
+            dataStream << "interior{\n"; // ior 1.33\n";
+            dataStream << "fade_power 1001\n";
+            dataStream << "fade_distance 0.25\n";
+            dataStream << "fade_color <0.7,0.7,1.0>\n";
+            dataStream << "caustics 0.16\n";
+            dataStream << "}\n"; // end of interior
+            dataStream << "}\n"; // end of material
+
+    }
+    break;
+    case 1:
+           {
+                dataStream << "material{\n";
+                dataStream << "texture{\n";
+                dataStream << "Skin}\n"; // end of texture T_wine fro water -- Wine for blood
+                dataStream << "}\n";
+
+           }
+        break;
+
+    case 0:
+           {
+                dataStream << "material{\n";
+                dataStream << "texture{\n";
+                dataStream << "T_wine}\n"; // end of texture T_wine fro water -- Wine for blood
+                dataStream << "}\n";
+
+           }
+        break;
+
+    case 2:
+           {
+                dataStream << "material{\n";
+                dataStream << "texture{\n";
+                dataStream << "pigment{rgb <1,0,0>}\n";
+                dataStream << "finish{\n";
+                  dataStream << "conserve_energy\n";
+                  dataStream << "diffuse 0.6\n";
+                  dataStream << "ambient 0\n";
+                  dataStream << "specular 0.5\n";
+                  dataStream << "roughness 0.05\n";
+                  dataStream << "reflection{0 1 fresnel on metallic 0}\n";
+                dataStream << "}\n";
+                dataStream << "}\n";
+                dataStream << "interior{ior 1.16}\n";
+                dataStream << "}\n";
+
+           }
+        break;
+    }
+    dataStream << "}\n"; //end of file
      }
+
         dataStream.close();
         this->povRayFileNumber++;
   }
@@ -919,6 +966,7 @@ inline void drawSurfaceGrid(TColorRGBA c,bounding_box &bbox) {
         DrawMesh(MCMeshPoints,normals,intersect.polys,c,false);
         MCMeshPoints_vector.push_back(MCMeshPoints);
         normals_vector.push_back(normals);
+        intersect.type=particles[0].type;
         intersector_vector.push_back(intersect);
 
     }
