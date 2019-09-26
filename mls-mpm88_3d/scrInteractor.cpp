@@ -122,9 +122,9 @@ bool scrInteractor::Init(auxRect<float> rec_extents, float near_z,
 
 	this->rec_initial = rec_extents;
 
-	this->aux_z = (far_z + near_z) / 2;
-	this->far_z = (far_z - this->aux_z) * 10.0;
-	this->near_z = (near_z - this->aux_z) * 10.0;
+    this->aux_z = (far_z + near_z) / 2;
+    this->far_z = (far_z - this->aux_z) * 10.0;
+    this->near_z = (near_z - 0.75*this->aux_z) * 10.0;
 	this->bg_color = new float[3];
 	this->Normal_Change = false;
 	this->Centroide = new float[3];

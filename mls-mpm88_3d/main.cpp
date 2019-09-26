@@ -105,7 +105,33 @@ public:
     }
 };
 
+void DrawGround()
+{
 
+    static const GLfloat difw[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+    static const GLfloat spec[] = { 0.5f, 0.5f, 0.5f, 1.0f };
+    static const GLfloat ambi[] = { 0.1f, 0.1f, 0.1f, 1.0f };
+    glEnable(GL_LIGHTING);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+
+    glMaterialfv(GL_FRONT, GL_SPECULAR, spec);
+    glMaterialfv(GL_FRONT, GL_AMBIENT,  ambi);
+    glMaterialf(GL_FRONT, GL_SHININESS, 30);
+
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, difw);
+    glPushMatrix();
+    //glTranslatef(0, -0.6, 0);
+    glColor3fv(difw);
+    glNormal3f(0.0, 1.0, 0.0);
+    glBegin(GL_POLYGON);
+    glVertex3d(-10.0, -0.006, -10.0);
+    glVertex3d(-10.0, -0.006,  10.0);
+    glVertex3d( 10.0, -0.006,  10.0);
+    glVertex3d( 10.0, -0.006, -10.0);
+    glEnd();
+    glPopMatrix();
+};
 
 static int ox, oy;
 bool buttondown[3] = {false, false, false};
@@ -277,6 +303,7 @@ TColorRGBA caux;
  Print->Face(7,whiteo);
  Print->Face(8,whiteo);
  Print->Face(9,whiteo);
+ //DrawGround();
 
  glDisable(GL_BLEND);
 
@@ -545,6 +572,8 @@ void constructBox()
   malha->addCell(cell);
 
 }
+
+
 
 int main(int argc, char ** argv)
 {
