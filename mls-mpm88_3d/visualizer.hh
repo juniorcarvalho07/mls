@@ -472,7 +472,7 @@ int type;
 
     dataStream << "#declare Skin =\n"
      "texture {\n"
-                    "pigment { White }\n"
+                    "pigment { Yellow }\n"
                     "normal {\n"
                         "wood ramp_wave\n"
                         "slope_map {\n"
@@ -550,7 +550,9 @@ int type;
          }
 
          dataStream << "texture {\n"
-          "Glass\n"
+                       "pigment {\n"
+                       "color rgbt <0.6, 0.6, 0.6, 0.8>\n"
+                       "}\n"
         "}\n";
          dataStream << "}\n";
            }
@@ -698,9 +700,25 @@ case -1:
 
     case 0:
            {
-                dataStream << "material{\n";
-                dataStream << "texture{\n";
-                dataStream << "T_wine}\n"; // end of texture T_wine fro water -- Wine for blood
+                dataStream << "material {\n";
+                dataStream << "texture {\n";
+                dataStream << "pigment {\n";
+                dataStream << "color rgbt <0.8, 0.8, 0.8, 0.9>\n";
+                dataStream << "}\n";
+                dataStream << "finish {\n";
+                dataStream << "ambient 0.0\n";
+                dataStream << "diffuse 0.0\n";
+                dataStream << "reflection {\n";
+                dataStream << "0.0, 1.0\n";
+                dataStream << "fresnel on\n";
+                dataStream << "}\n";
+                dataStream << "specular 0.4\n";
+                dataStream << "roughness 0.1\n";
+                dataStream << "}\n";
+                dataStream << "}\n";
+                dataStream << "interior {\n";
+                dataStream << "ior 1.3\n";
+                dataStream << "}\n";
                 dataStream << "}\n";
 
            }
