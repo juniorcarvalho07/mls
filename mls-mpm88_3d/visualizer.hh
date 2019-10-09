@@ -615,7 +615,23 @@ int type;
                     dataStream << "< " << MalhaObst->getVertex(MalhaObst->getCell(i)->getVertexId(2))->getCoord(0) << ", " << MalhaObst->getVertex(MalhaObst->getCell(i)->getVertexId(2))->getCoord(1) << ", " << MalhaObst->getVertex(MalhaObst->getCell(i)->getVertexId(2))->getCoord(2) << " > }\n";
             }*/
             dataStream << "texture {\n";
-       dataStream << " T_Glass } \n"; //for blood
+            switch (I[0].type)
+            {
+              case -1:
+                dataStream << " T_Glass } \n"; //for blood
+                break;
+            case 0:
+              dataStream << " Skin } \n"; //for water
+              break;
+            case 1:
+              dataStream << " Skin } \n"; //for water
+              break;
+            case 2:
+              dataStream << " Skin } \n"; //for water
+              break;
+            }
+
+       //dataStream << " T_Glass } \n"; //for blood
         //dataStream << " Skin } \n"; //for water
 
          dataStream << "}\n";

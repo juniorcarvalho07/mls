@@ -592,12 +592,12 @@ int main(int argc, char ** argv)
 
    constructBox();
    //std::cout<< std::endl<< "aqui"<<std::endl<<std::endl;
-  //MalhaObst = new TMesh();
+  MalhaObst = new TMesh();
    if(MalhaObst!=NULL)
    {
     //Reader.read(MalhaObst,"/home/helton/mls/mls-mpm88_3d/off/splineit2corteTri.off");
         //Reader.read(MalhaObst,"/home/helton/Gdrive/mpm/off/splineit2corteTriRef.off");
-     Reader.read(MalhaObst,"/home/helton/mls/mls-mpm88_3d/off/cup.off");
+     Reader.read(MalhaObst,"/home/helton/SPH/mls/mls-mpm88_3d/off/mushroom.off");
      //Reader.read(MalhaObst,"/home/helton/Gdrive/mpm/off/splineit2s.off");
      //Reader.read(MalhaObst,"/home/helton/Gdrive/mpm/off/bunny200Points1.off");
       // Reader.read(MalhaObst,"/home/helton/Dropbox/mpm/off/cross.off");
@@ -713,9 +713,9 @@ int main(int argc, char ** argv)
 
         //mpm.init(Vec(0.0+0.15,0.0+0.5,0.0+0.15),Vec(0.0+0.5,0.0+1.0,0.0+0.85),0.0,0.025,0); //Dambreak
         //mpm.init_sphere(Vec(0.25,0.3,0.35),Vec(0.40, 0.8, 0.65), 0.02,0.0225,1);
-        mpm.init_sphere(Vec(1.1,0.55,0.25),Vec(1.32, 1.3, 0.80), 0.02,0.02,0);
-        mpm.init_sphere(Vec(0.25,0.8,0.35),Vec(0.4, 1.1, 0.65), 0.02,0.0225,1);
-        mpm.init_sphere(Vec(0.65,0.8,0.35),Vec(0.8, 1.1, 0.65), 0.02,0.0225,2);
+        mpm.init_sphere(Vec(0.9,0.55,0.25),Vec(1.12, 1.3, 0.80), 0.02,0.02,2);
+        //mpm.init_sphere(Vec(0.25,0.8,0.35),Vec(0.4, 1.1, 0.65), 0.02,0.0225,1);
+        //mpm.init_sphere(Vec(0.65,0.8,0.35),Vec(0.8, 1.1, 0.65), 0.02,0.0225,2);
         //mpm.init_sphere(Vec(0.7,0.8,0.35),Vec(0.92, 1.4, 0.65), 0.02,0.0225,0);
         //mpm.init(Vec(0.0+0.67,0.0+0.5,0.0+0.35),Vec(0.0+0.97,0.0+1.4,0.0+0.65),0.0,0.02,0);
         //mpm.init(Vector(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.01,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.15,meshHandlerObst->getVertex(Vymax)->getCoord(2)+0.0055),Vector(meshHandlerObst->getVertex(Vymax)->getCoord(0)+0.045,meshHandlerObst->getVertex(Vymax)->getCoord(1)-0.02,meshHandlerObst->getVertex(Vymax)->getCoord(2)+0.055),0.02,0.006); //simpleit3corte

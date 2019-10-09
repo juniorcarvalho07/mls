@@ -1,24 +1,24 @@
 Determining if the pthread_create exist failed with the following output:
-Change Dir: /home/helton/mls/mls-mpm88_3d/build/CMakeFiles/CMakeTmp
+Change Dir: /home/helton/SPH/mls/mls-mpm88_3d/build/CMakeFiles/CMakeTmp
 
-Run Build Command:"/usr/bin/make" "cmTC_dc575/fast"
-/usr/bin/make -f CMakeFiles/cmTC_dc575.dir/build.make CMakeFiles/cmTC_dc575.dir/build
-make[1]: Entering directory '/home/helton/mls/mls-mpm88_3d/build/CMakeFiles/CMakeTmp'
-Building C object CMakeFiles/cmTC_dc575.dir/CheckSymbolExists.c.o
-/usr/bin/gcc    -o CMakeFiles/cmTC_dc575.dir/CheckSymbolExists.c.o   -c /home/helton/mls/mls-mpm88_3d/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c
-Linking C executable cmTC_dc575
-/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_dc575.dir/link.txt --verbose=1
-/usr/bin/gcc      -rdynamic CMakeFiles/cmTC_dc575.dir/CheckSymbolExists.c.o  -o cmTC_dc575 
-CMakeFiles/cmTC_dc575.dir/CheckSymbolExists.c.o: Na função "main":
-CheckSymbolExists.c:(.text+0x1b): referência não definida para "pthread_create"
+Run Build Command:"/usr/bin/make" "cmTC_753cd/fast"
+/usr/bin/make -f CMakeFiles/cmTC_753cd.dir/build.make CMakeFiles/cmTC_753cd.dir/build
+make[1]: Entering directory '/home/helton/SPH/mls/mls-mpm88_3d/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_753cd.dir/CheckSymbolExists.c.o
+/usr/bin/gcc     -o CMakeFiles/cmTC_753cd.dir/CheckSymbolExists.c.o   -c /home/helton/SPH/mls/mls-mpm88_3d/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+Linking C executable cmTC_753cd
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_753cd.dir/link.txt --verbose=1
+/usr/bin/gcc       CMakeFiles/cmTC_753cd.dir/CheckSymbolExists.c.o  -o cmTC_753cd -rdynamic 
+CMakeFiles/cmTC_753cd.dir/CheckSymbolExists.c.o: In function `main':
+CheckSymbolExists.c:(.text+0x1b): undefined reference to `pthread_create'
 collect2: error: ld returned 1 exit status
-CMakeFiles/cmTC_dc575.dir/build.make:97: recipe for target 'cmTC_dc575' failed
-make[1]: *** [cmTC_dc575] Error 1
-make[1]: Leaving directory '/home/helton/mls/mls-mpm88_3d/build/CMakeFiles/CMakeTmp'
-Makefile:126: recipe for target 'cmTC_dc575/fast' failed
-make: *** [cmTC_dc575/fast] Error 2
+CMakeFiles/cmTC_753cd.dir/build.make:97: recipe for target 'cmTC_753cd' failed
+make[1]: *** [cmTC_753cd] Error 1
+make[1]: Leaving directory '/home/helton/SPH/mls/mls-mpm88_3d/build/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_753cd/fast' failed
+make: *** [cmTC_753cd/fast] Error 2
 
-File /home/helton/mls/mls-mpm88_3d/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+File /home/helton/SPH/mls/mls-mpm88_3d/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
 /* */
 #include <pthread.h>
 
@@ -34,22 +34,22 @@ int main(int argc, char** argv)
 }
 
 Determining if the function pthread_create exists in the pthreads failed with the following output:
-Change Dir: /home/helton/mls/mls-mpm88_3d/build/CMakeFiles/CMakeTmp
+Change Dir: /home/helton/SPH/mls/mls-mpm88_3d/build/CMakeFiles/CMakeTmp
 
-Run Build Command:"/usr/bin/make" "cmTC_32b7f/fast"
-/usr/bin/make -f CMakeFiles/cmTC_32b7f.dir/build.make CMakeFiles/cmTC_32b7f.dir/build
-make[1]: Entering directory '/home/helton/mls/mls-mpm88_3d/build/CMakeFiles/CMakeTmp'
-Building C object CMakeFiles/cmTC_32b7f.dir/CheckFunctionExists.c.o
-/usr/bin/gcc   -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_32b7f.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-3.10/Modules/CheckFunctionExists.c
-Linking C executable cmTC_32b7f
-/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_32b7f.dir/link.txt --verbose=1
-/usr/bin/gcc  -DCHECK_FUNCTION_EXISTS=pthread_create    -rdynamic CMakeFiles/cmTC_32b7f.dir/CheckFunctionExists.c.o  -o cmTC_32b7f -lpthreads 
-/usr/bin/ld: não foi possível localizar -lpthreads
+Run Build Command:"/usr/bin/make" "cmTC_951be/fast"
+/usr/bin/make -f CMakeFiles/cmTC_951be.dir/build.make CMakeFiles/cmTC_951be.dir/build
+make[1]: Entering directory '/home/helton/SPH/mls/mls-mpm88_3d/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_951be.dir/CheckFunctionExists.c.o
+/usr/bin/gcc    -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_951be.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-3.7/Modules/CheckFunctionExists.c
+Linking C executable cmTC_951be
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_951be.dir/link.txt --verbose=1
+/usr/bin/gcc   -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTC_951be.dir/CheckFunctionExists.c.o  -o cmTC_951be -rdynamic -lpthreads 
+/usr/bin/ld: cannot find -lpthreads
 collect2: error: ld returned 1 exit status
-CMakeFiles/cmTC_32b7f.dir/build.make:97: recipe for target 'cmTC_32b7f' failed
-make[1]: *** [cmTC_32b7f] Error 1
-make[1]: Leaving directory '/home/helton/mls/mls-mpm88_3d/build/CMakeFiles/CMakeTmp'
-Makefile:126: recipe for target 'cmTC_32b7f/fast' failed
-make: *** [cmTC_32b7f/fast] Error 2
+CMakeFiles/cmTC_951be.dir/build.make:97: recipe for target 'cmTC_951be' failed
+make[1]: *** [cmTC_951be] Error 1
+make[1]: Leaving directory '/home/helton/SPH/mls/mls-mpm88_3d/build/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_951be/fast' failed
+make: *** [cmTC_951be/fast] Error 2
 
 
